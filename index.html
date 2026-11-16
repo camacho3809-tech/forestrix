@@ -342,6 +342,38 @@
   .rank-list{padding:0;margin:8px 0 0;list-style:none}
   .rank-mine{color:#21653d;font-weight:750}
   @media(max-height:480px){.dossier-hero{height:100px} #app nav button{min-height:36px} .dossier-actions{max-height:40dvh}}
+  .wallet-status{display:flex;align-items:center;gap:5px}
+  .header-streak{font:650 16px var(--game-display);display:flex;align-items:center;gap:2px;color:#ffdf91;padding:3px 5px;border-radius:9px;background:#2c5940}
+  .team-emblem{display:grid;place-items:center;width:50px;height:50px;border:1px solid #b9cc88;border-radius:14px;background:#4d7947;font-size:25px}
+  .team-emblem[data-team="haya"]{background:#a07342}.team-emblem[data-team="abedul"]{background:#568581}
+  .player-head{display:flex;align-items:center;gap:8px;min-width:0}
+  .profile-hero h2{overflow-wrap:anywhere}
+  .profile-level{margin:10px 0 4px}
+  .profile-streak{color:#7c4d1b;font-weight:700}
+  .profile-numbers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  .profile-numbers .tile{display:flex;flex-direction:column-reverse;text-align:center;padding:7px 3px}
+  .profile-numbers .tile strong{font:650 26px var(--game-display)}
+  .profile-numbers .tile small{font-size:11px}
+  .profile-impact small{display:block;margin-top:4px}
+  .locked-rewards{filter:saturate(.28);color:#4e5e52;font-size:13px}
+  .badge-grid{list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:7px 0 11px;padding:0}
+  .badge-grid .badge-tile{padding:7px 5px;text-align:center;background:#eeede4;border-color:#c9cbbf;filter:grayscale(1);color:#414e44}
+  .badge-grid .badge-tile.earned{filter:none;background:#fff6ce;border-color:#cbb575}
+  .badge-glyph{display:block;font-size:23px}
+  .badge-tile strong{font-size:12px}
+  .badge-tile small{font-size:10px;line-height:1.22}
+  .badge-status{display:block;font-size:10px;font-weight:700;margin-top:5px}
+  .profile-numbers,.profile-impact,.badge-grid,#profile-statistics{scroll-margin-top:5px}
+  #profile-statistics summary{cursor:pointer;font:650 18px var(--game-display)}
+  #profile-statistics h4{margin-top:6px}
+  #progress-notice{position:absolute;z-index:9;pointer-events:none;top:calc(78px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(310px,calc(100% - 28px));text-align:center;padding:8px 11px;background:#254c37;color:#fff4ca;border:1px solid #b7bf79;border-radius:15px;box-shadow:0 5px 12px #20372265;animation:progress-pop .3s ease-out}
+  #progress-notice strong{display:block;font:650 18px var(--game-display)}
+  #progress-notice.card-reveal{padding:17px 11px;background:linear-gradient(160deg,#5a803e,#304c37);border-color:#ead690;animation:reward-flip .5s ease-out}
+  #progress-notice.card-reveal strong::before{content:"✦ ";color:#ffe095}
+  @keyframes progress-pop{from{transform:translate(-50%,-8px) scale(.92);opacity:.4}to{transform:translate(-50%,0) scale(1);opacity:1}}
+  @keyframes reward-flip{from{transform:translateX(-50%) perspective(400px) rotateY(-85deg);opacity:.25}to{transform:translateX(-50%) perspective(400px) rotateY(0);opacity:1}}
+  @media(max-width:365px){.wallet-status{gap:2px}.header-streak{padding-inline:2px;font-size:14px}.badge-tile strong{font-size:11px}}
+  @media(prefers-reduced-motion:reduce){#progress-notice,#progress-notice.card-reveal{animation:none}}
 </style>
 </head>
 <body>
@@ -385,7 +417,7 @@
   <div class="app-head">
     <header>
       <div class="brand"><span class="brand-token"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-brand"></use></svg></span><div><h1>Forestrix</h1><small>University Parks, Oxford</small></div></div>
-      <div id="wallet" aria-label="Ton solde de Savia" data-es-label="Tu saldo de Savia"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-savia"></use></svg><span id="wallet-amount">0 Savia</span></div>
+      <div class="wallet-status"><span class="header-streak" id="header-streak" aria-label="Série quotidienne">🔥 <span id="header-streak-count">0</span></span><div id="wallet" aria-label="Ton solde de Savia" data-es-label="Tu saldo de Savia"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-savia"></use></svg><span id="wallet-amount">20 Savia</span></div></div>
     </header>
     <div id="duel-banner" hidden>
       <span id="duel-status"></span>
@@ -451,6 +483,7 @@
   </nav>
 </div>
 <div id="notice" role="status" hidden></div>
+<div id="progress-notice" role="status" aria-live="polite" hidden><strong id="progress-notice-title"></strong><span id="progress-notice-text"></span></div>
 <div id="result-screen" role="status" aria-live="polite" hidden><div class="result-card">
   <div id="result-emblem" aria-hidden="true"></div>
   <p id="result-title"></p><p id="result-copy"></p>
@@ -540,7 +573,6 @@ const CLAIM_PROTECTION = 60 * 60000;
 const DISCOVERY_REWARD = 5;
 const DISCOVERY_DAILY_LIMIT = 20;
 const CACHE_AGE = 7 * DAY;
-const MAX_TREES = 5;
 const TEAMS = {roble:say("Chêne","Roble"), haya:say("Hêtre","Haya"), abedul:say("Bouleau","Abedul")};
 const playerTeam = () => state.profile?.team || 'roble';
 const teamName = key => TEAMS[key] || '—';
@@ -711,7 +743,7 @@ function nextMidnight(now) {
 }
 function initialState(now) {
   return {
-    savia:0, stats:{earned:0, spent:0, meters:0, parkMs:0, wins:0, losses:0},
+    savia:20, stats:{earned:0, spent:0, meters:0, parkMs:0, wins:0, losses:0},
     trees:{}, discoveries:{}, species:{}, cards:{}, challenges:{}, eventos:[],
     points:{roble:0,haya:0,abedul:0}, awake:{}, daily:{date:dayKey(now), parkMs:0, timeSavia:0, discoverySavia:0},
     nextScore:nextMidnight(now), gameMs:0, lastRivalGameMs:null, rivalTurn:0, cache:null, mode:'gps'
@@ -816,7 +848,7 @@ function playMapEffect(entry) {
   const effect = document.createElement('div');
   effect.className = 'map-fx';
   const isWater = entry.tipo === 'cuidar';
-  const earned = entry.tipo === 'despierto_encontrado' ? 30 : entry.savia;
+  const earned = entry.savia;
   if (entry.tipo === 'reclamar') {
     const flag = document.createElement('span');
     flag.className = 'fx-flag';
@@ -907,7 +939,7 @@ function event(tipo, id, now, posicion = coords(), extra = {}) {
   const entry = {tipo, fecha:new Date(now).toISOString(), id_arbol:id, posicion, ...extra};
   state.eventos.push(entry);
   cueGameFeedback(entry);
-  if (missionEvents.includes(tipo) && !entry.simulado) redeemMissions(now);
+  trackProgress(entry,now);
   return entry;
 }
 function meters(a,b) {
@@ -1036,14 +1068,15 @@ function daily(date) {
   if (state.daily.date !== date) state.daily = {date,parkMs:0,timeSavia:0,discoverySavia:0};
   return state.daily;
 }
-function giveCard(tree,variant = null) {
+function giveCard(tree,variant = null,now=Date.now(),source='accion',rareRate=.10) {
   const collection = state.cards[tree.cardKey] ||= {label:tree.cardLabel,variants:{},used:0};
   collection.label = tree.cardLabel;
   if (!variant) {
     const roll = Math.random();
-    variant = roll < .10 ? ['flor','otono','dorada'][Math.floor(roll*30)] : 'normal';
+    variant = roll < rareRate ? rareVariants[Math.floor(roll/rareRate*rareVariants.length)] : 'normal';
   }
   collection.variants[variant] = (collection.variants[variant] || 0) + 1;
+  if (rareVariants.includes(variant)) event('carta_rara',tree.id,now,null,{variante:variant,origen:source});
   return variant;
 }
 function mergeCards(from,to,label) {
@@ -1091,10 +1124,12 @@ function checkAwake(now) {
   for (const tree of awakeCandidates(date)) {
     if (meters(locationFix,tree) >= 20) continue;
     (state.awake[date] ||= {})[tree.id] = true;
-    gain(30);
-    giveCard(trees.get(tree.id) || tree,'especial');
-    event('despierto_encontrado',tree.id,now);
-    notify(say("Arbre éveillé ! +30 Savia et une carte spéciale.","¡Árbol despierto! +30 Savia y carta especial."));
+    gain(15);
+    const discovered=trees.get(tree.id) || tree;
+    const variant=giveCard(discovered,null,now,'arbol_despierto',.25);
+    event('despierto_encontrado',tree.id,now,coords(),{savia:15,carta:variant,xp:30});
+    revealReward(discovered,variant,say('Surprise · arbre éveillé','Sorpresa · árbol despierto'));
+    notify(say("Arbre éveillé ! +15 Savia, +30 XP et une carte.","¡Árbol despierto! +15 Savia, +30 XP y una carta."));
     changed = true;
   }
   return changed;
@@ -1154,6 +1189,7 @@ function advanceWorld(now) {
 function settleScore() {
   const score = pointsAt(state.nextScore-1);
   for (const team of Object.keys(score)) state.points[team] += score[team];
+  if (Object.values(score).some(Boolean)) event('puntos_equipo',null,state.nextScore-1,null,{dia:dayKey(state.nextScore-1),puntos:score});
   state.nextScore = nextMidnight(state.nextScore);
 }
 function processRival(now) {
@@ -1178,6 +1214,12 @@ function tick(now = Date.now()) {
   const before = lastTick;
   lastTick = now;
   let changed = advanceWorld(now);
+  if (changed) awardBadges(now);
+  if (state.progression.streak && !streakNow(now) && dayKey(now)>state.progression.lastStreakDay) {
+    state.progression.streak=0;
+    event('racha',null,now,null,{numero:0,savia:0});
+    changed=true;
+  }
   if (visibleSince !== null && now > before) {
     const start = Math.max(before,visibleSince);
     state.gameMs += now - start;
@@ -1218,7 +1260,7 @@ function restriction(action,tree,now) {
   if (action === 'discover' && state.discoveries[id]) return say("Cet arbre est déjà dans ton herbier.","Este árbol ya está en tu herbario.");
   if (action === 'claim') {
     if (condition !== 'libre' || state.challenges[id]) return say("L’arbre doit être libre.","El árbol debe estar libre.");
-    if (ownedCount(now)+reservedCount() >= MAX_TREES) return say("Tes arbres et tes défis occupent déjà les 5 places.","Tus árboles y retos salientes ya ocupan las 5 plazas.");
+    if (ownedCount(now)+reservedCount() >= treeLimit()) return say("Tes arbres et tes défis occupent déjà les places disponibles.","Tus árboles y retos salientes ya ocupan las plazas disponibles.");
     if (state.savia < TIERS[tree.tier].price) return say("Tu n’as pas assez de Savia.","Te falta Savia.");
   }
   if (action === 'care' || action === 'level') {
@@ -1229,7 +1271,7 @@ function restriction(action,tree,now) {
   if (action === 'challenge') {
     if (condition !== 'rival' && !(condition === 'seco' && record?.owner && record.owner !== playerTeam())) return say("L’arbre doit appartenir à un rival.","El árbol debe pertenecer a un rival.");
     if (state.challenges[id]) return say("Un défi est déjà en cours.","Ya hay un reto activo.");
-    if (ownedCount(now)+reservedCount() >= MAX_TREES) return say("Il te faut une place libre pour gagner cet arbre.","Necesitas una plaza libre para ganar el árbol.");
+    if (ownedCount(now)+reservedCount() >= treeLimit()) return say("Il te faut une place libre pour gagner cet arbre.","Necesitas una plaza libre para ganar el árbol.");
     if (state.savia < duelPrice(tree,now)) return say("Tu n’as pas assez de Savia.","Te falta Savia.");
   }
   if (action === 'defend' && state.challenges[id]?.direction !== 'in') return say("Le défi est terminé.","El reto ya ha terminado.");
@@ -1257,20 +1299,20 @@ function act(action,id,identification = null,photo = null) {
     if (newSpecies) state.species[tree.cardKey] = tree.species;
     totals.discoverySavia += reward;
     gain(reward + (newSpecies ? 20 : 0));
-    const variant = giveCard(tree);
+    const variant = giveCard(tree,null,now,'descubrir');
     event('descubrir',id,now,coords(),{savia:reward+(newSpecies?20:0),carta:variant,especie:tree.species || null,identificada_por_ti:tree.identifiedByPlayer});
     notify(say("Arbre ajouté à l’herbier · +","Árbol añadido al herbario · +") + (reward + (newSpecies ? 20 : 0)) + ' Savia.');
   } else if (action === 'claim') {
     const price = TIERS[tree.tier].price;
     spend(price);
     takeTree(id,playerTeam(),now);
-    event('reclamar',id,now,coords(),{savia_gastada:price});
+    event('reclamar',id,now,coords(),{savia_gastada:price,categoria:tree.tier});
     notify(say("Tu es maintenant le gardien de cet arbre.","Ya eres guardián de este árbol."));
   } else if (action === 'care') {
     record.until = now + 7*DAY;
     record.lastCare = dayKey(now);
     gain(5);
-    const variant = giveCard(tree);
+    const variant = giveCard(tree,null,now,'cuidar');
     event('cuidar',id,now,coords(),{savia:5,carta:variant});
     notify(say("Vitalité restaurée · +5 Savia et une carte.","Vitalidad restaurada · +5 Savia y carta."));
   } else if (action === 'challenge') {
@@ -1304,6 +1346,11 @@ function setLocation(lat,lng,accuracy = null,restored = false) {
     if (mode === 'test' || (accuracy <= 50 && (elapsed > 120 || distance >= Math.max(5,accuracy/2)))) {
       if (mode === 'test' || (elapsed > 0 && elapsed <= 120 && distance/elapsed <= 4)) {
         state.stats.meters += distance;
+        if (inPark(walkAnchor) && inPark(fix)) {
+          const prior=state.progression.parkMeters;
+          state.progression.parkMeters+=distance;
+          if (prior<5000 && state.progression.parkMeters>=5000) awardBadges(now);
+        }
         recordActivity(dayKey(now),now,0,0,distance);
       }
       walkAnchor = {...fix,time:now};
@@ -1793,7 +1840,7 @@ function renderMyTrees(now) {
   const outgoing = Object.entries(state.challenges).filter(([,challenge])=>challenge.direction === 'out')
     .map(([id,challenge])=>'<article class="entry"><h3>'+html(trees.has(id) ? treeTitle(trees.get(id)) : say("Arbre ","Árbol ")+id)+'</h3><p>'+html(challengeText(challenge,now))+
       '</p><button type="button" class="secondary" data-action="show" data-id="'+html(id)+say("\">Voir sur la carte</button></article>","\">Ver en mapa</button></article>")).join('');
-  drawPanel('my-trees',say("<div class=\"row\"><h2>Mes arbres</h2><strong>","<div class=\"row\"><h2>Mis árboles</h2><strong>")+ownedCount(now)+' / '+MAX_TREES+say(" arbres</strong></div>"," árboles</strong></div>")+
+  drawPanel('my-trees',say("<div class=\"row\"><h2>Mes arbres</h2><strong>","<div class=\"row\"><h2>Mis árboles</h2><strong>")+ownedCount(now)+' / '+treeLimit()+say(" arbres</strong></div>"," árboles</strong></div>")+
     (entries || say("<p class=\"hint\">Revendique un arbre libre sur la carte pour devenir son gardien.</p>","<p class=\"hint\">Reclama un árbol libre desde el mapa para hacerte su guardián.</p>"))+
     say("<p class=\"hint\">Chaque nouvel arbre est protégé pendant 1 heure. Tu as 15 minutes pour le défendre si un rival te défie.</p>","<p class=\"hint\">Cada árbol nuevo queda protegido durante 1 hora. Si te retan, tienes 15 minutos para defenderlo.</p>")+
     say("<div class=\"entries\"><h3>Défis que tu as lancés</h3>","<div class=\"entries\"><h3>Retos que has iniciado</h3>")+(outgoing || say("<p class=\"hint\">Aucun défi lancé.</p>","<p class=\"hint\">Sin retos salientes.</p>"))+'</div>');
@@ -1808,9 +1855,14 @@ function recordActivity(date,now,gameMs = 0,parkMs = 0,distance = 0) {
     entry = event('actividad_diaria',null,now,null,{dia:date,juego_ms:0,parque_ms:0,metros:0});
     activityLog.set(date,entry);
   }
+  const before=entry.parque_ms;
   entry.juego_ms += gameMs;
   entry.parque_ms += parkMs;
   entry.metros += distance;
+  if (state.progression && state.profile && before<60000 && entry.parque_ms>=60000) {
+    redeemMissions(now);
+    awardBadges(now);
+  }
 }
 function migrateAnalytics(now) {
   if (state.analyticsVersion) return;
@@ -1920,14 +1972,12 @@ function careStreak(dates,today) {
   return streak;
 }
 const chartDate = new Intl.DateTimeFormat(locale,{timeZone:'UTC',weekday:'short',day:'numeric'});
-const analyticsNumber = new Intl.NumberFormat(locale,{maximumFractionDigits:2});
 function renderActivityChart(days) {
   const maximum = Math.max(60000,...[...days.values()].map(day=>day.parkMs));
   const bars = [...days].map(([date,day])=>{
     const label = chartDate.format(new Date(date+'T12:00:00Z'));
-    const minutes = day.parkMs / 60000;
-    const amount = minutes > 0 && minutes < .1 ? say("Moins de 0,1","Menos de 0,1") : analyticsNumber.format(minutes);
-    return '<li><span class="bar-value">'+html(amount === say("Moins de 0,1","Menos de 0,1") ? '<0,1' : amount)+'</span>'+
+    const amount = number.format(Math.round(day.parkMs/60000));
+    return '<li><span class="bar-value">'+html(amount)+'</span>'+
       '<div class="bar-track" aria-hidden="true"><span style="height:'+(day.parkMs ? Math.max(2,day.parkMs/maximum*100) : 0)+'%"></span></div>'+
       '<span class="bar-day" aria-label="'+html(label+', '+amount+say(" minutes"," minutos"))+'">'+html(label)+'</span></li>';
   }).join('');
@@ -1937,53 +1987,58 @@ function statTiles(rows,cssClass = 'stats') {
   return '<div class="'+cssClass+'">'+rows.map(([label,value])=>'<article class="tile"><small>'+html(label)+'</small><strong>'+html(value)+'</strong></article>').join('')+'</div>';
 }
 function renderProfile(now) {
-  const analysis = getAnalytics(now);
-  const days = [...analysis.days.values()];
-  const summary = days.reduce((total,day)=>({
-    visits:total.visits+day.visits,parkMs:total.parkMs+day.parkMs,meters:total.meters+day.meters,
-    played:total.played+Number(day.played)
-  }),{visits:0,parkMs:0,meters:0,played:0});
-  const points = pointsAt(now);
-  const teams = Object.entries(TEAMS).map(([id,team]) => '<article class="tile"><strong>'+team+'</strong><small>'+
-    number.format(state.points[id])+say(" pts cumulés</small><small>+"," pts acumulados</small><small>+")+number.format(points[id])+say(" pts aujourd’hui</small></article>"," pts hoy</small></article>")).join('');
-  const impact = Math.floor(analysis.spent/200);
-  const towardNext = analysis.spent%200;
-  const defenses = analysis.defenses ? number.format(Math.round(100*analysis.defended/analysis.defenses))+' % ('+
-    analysis.defended+'/'+analysis.defenses+')' : say("Aucune défense terminée","Sin defensas resueltas");
-  const owned = currentTrees(now).map(tree=>{
-    const days = vitality(state.trees[tree.id],now);
-    const risk = days <= 2 || tree.tier === 'remarcable' ? 'alto' : days <= 4 ? 'medio' : 'bajo';
-    const streak = careStreak(analysis.careDays.get(tree.id),analysis.today);
-    return '<article class="entry"><div class="row"><h4>'+html(treeTitle(tree))+'</h4><span class="risk '+risk+say("\">Risque ","\">Riesgo ")+(language==='fr' ? {alto:'élevé',medio:'moyen',bajo:'faible'}[risk] : risk)+'</span></div>'+
-      '<p class="hint">'+streak+(streak === 1 ? say(" jour d’entretien consécutif"," día seguido de cuidados") : say(" jours d’entretien consécutifs"," días seguidos de cuidados"))+say(" · Vitalité "," · Vitalidad ")+days+'/7</p>'+
-      '<progress max="7" value="'+days+say("\" aria-label=\"Vitalité\"></progress></article>","\" aria-label=\"Vitalidad\"></progress></article>");
+  const keepOpen=$('profile-statistics')?.open;
+  const analysis=getAnalytics(now);
+  const days=[...analysis.days.values()];
+  const minutes=Math.round(days.reduce((sum,day)=>sum+day.parkMs,0)/60000);
+  const km=days.reduce((sum,day)=>sum+day.meters,0)/1000;
+  const displayKm=new Intl.NumberFormat(locale,{minimumFractionDigits:1,maximumFractionDigits:1}).format(km);
+  const played=playedDays(shiftDate(dayKey(now),-6),now).size;
+  const allDays=playedDays('0000-01-01',now).size;
+  const team=playerTeam(), {level,progress,target}=levelFor();
+  const treeImpact=Math.floor(earnedTeamPoints(seasonStart,now)[team]/100);
+  const streak=streakNow(now);
+  const badges=badgeDefinitions.map(([id,fr,es,icon,frGoal,esGoal])=>{
+    const earned=state.progression.badges.includes(id);
+    return '<li class="tile badge-tile'+(earned ? ' earned' : '')+'"><span class="badge-glyph" aria-hidden="true">'+icon+
+      '</span><strong>'+say(fr,es)+'</strong><small>'+say(frGoal,esGoal)+'</small><span class="badge-status">'+
+      (earned ? say('Obtenu','Conseguida') : say('Verrouillé','Bloqueada'))+'</span></li>';
   }).join('');
-  const todayTotals = state.daily.date === analysis.today ? state.daily : {timeSavia:0,discoverySavia:0};
-  const founder=state.eventos.some(entry=>entry.tipo==='mision_recompensa' && entry.mision==='founder');
-  drawPanel('profile','<div class="row"><h2>'+say('Profil','Perfil')+'</h2><button class="secondary" type="button" data-action="language">'+
-    say('Español','Français')+'</button></div><p class="hint">'+html(state.profile?.nickname || '')+' · '+html(teamName(playerTeam()))+
-    (founder ? ' · Fondateur' : '')+'</p>'+renderRanking(now)+say("<h3>Mes statistiques</h3><div class=\"teams\">","<h3>Mis estadísticas</h3><div class=\"teams\">")+teams+'</div>'+
-    say("<h3>Bilan de la semaine</h3><p class=\"hint\">7 derniers jours · heure d’Oxford</p>","<h3>Resumen de la semana</h3><p class=\"hint\">Últimos 7 días · hora de Oxford</p>")+
-    statTiles([[say("Jours de jeu","Días jugados"),summary.played+' / 7'],[say("Visites au parc","Visitas al parque"),number.format(summary.visits)],
-      [say("Temps total dans le parc","Tiempo total en el parque"),duration(summary.parkMs)],[say("Km parcourus","Km andados"),analyticsNumber.format(summary.meters/1000)]])+
-    renderActivityChart(analysis.days)+
-    say("<p class=\"ref-line\">Le temps et les distances sont enregistrés par jour depuis cette mise à jour. Les visites antérieures restent visibles.</p>","<p class=\"ref-line\">El tiempo y la distancia por día se registran desde esta actualización. Las visitas anteriores también se muestran.</p>")+
-    say("<h3>Tes arbres</h3>","<h3>Tus árboles</h3>")+(owned || say("<p class=\"hint stat-section\">Tu n’as pas encore revendiqué d’arbre.</p>","<p class=\"hint stat-section\">Todavía no tienes árboles reclamados.</p>"))+
-    say("<h3>Défis</h3>","<h3>Retos</h3>")+statTiles([[say("Gagnés","Ganados"),number.format(analysis.wins)],[say("Perdus","Perdidos"),number.format(analysis.losses)],[say("Défenses réussies","Defensas con éxito"),defenses]])+
-    say("<h3>Herbier</h3>","<h3>Herbario</h3>")+statTiles([[say("Espèces du guide découvertes","Especies de la guía descubiertas"),analysis.foundSpecies.size+' / '+SPECIES_GUIDE.length],
-      [say("Cartes rares obtenues","Cartas raras conseguidas"),number.format(analysis.rare)],[say("Arbres découverts","Árboles descubiertos"),number.format(analysis.treesFound)]])+
-    say("<h3>Impact</h3><article class=\"entry\"><strong>Tu as contribué à planter ","<h3>Impacto</h3><article class=\"entry\"><strong>Has ayudado a plantar ")+number.format(impact)+' '+(impact === 1 ? say("arbre","árbol") : say("arbres","árboles"))+
-    say("</strong><p class=\"hint\">Forestry France · impact simulé</p><progress max=\"200\" value=\"","</strong><p class=\"hint\">Forestry France · impacto simulado</p><progress max=\"200\" value=\"")+towardNext+
-    say("\" aria-label=\"Progression de Savia vers le prochain arbre\"></progress><small>Il manque ","\" aria-label=\"Progreso de Savia hacia el siguiente árbol\"></progress><small>Faltan ")+(200-towardNext)+say(" Savia pour le prochain.</small></article>"," Savia para el siguiente.</small></article>")+
-    statTiles([[say("Savia gagnée","Savia ganada"),number.format(state.stats.earned)],[say("Savia dépensée","Savia gastada"),number.format(analysis.spent)]])+
-    say("<p class=\"ref-line\">Aujourd’hui · ","<p class=\"ref-line\">Hoy: ")+todayTotals.timeSavia+say(" / 12 Savia pour le temps et récompense pour "," / 12 Savia por tiempo y recompensa por ")+todayTotals.discoverySavia/DISCOVERY_REWARD+
-    ' / '+DISCOVERY_DAILY_LIMIT+say(" arbres découverts ("," árboles descubiertos (")+todayTotals.discoverySavia+say(" Savia sur 100).</p>"," Savia de hasta 100).</p>")+
-    say("<div class=\"actions\"><button type=\"button\" class=\"secondary\" data-action=\"tutorial\">Revoir le tutoriel</button>","<div class=\"actions\"><button type=\"button\" class=\"secondary\" data-action=\"tutorial\">Volver a ver el tutorial</button>")+
-    say("<button type=\"button\" class=\"secondary\" data-action=\"opinion\">Donner mon avis</button>","<button type=\"button\" class=\"secondary\" data-action=\"opinion\">Enviar opinión</button>")+
-    say("<button type=\"button\" class=\"secondary\" data-action=\"export\">Exporter les données (JSON)</button></div>","<button type=\"button\" class=\"secondary\" data-action=\"export\">Exportar datos (JSON)</button></div>"));
+  const teamIcon={roble:'🌳',haya:'🍂',abedul:'🌿'}[team];
+  const header='<div class="entry profile-hero"><div class="row"><div class="player-head"><span class="team-emblem" data-team="'+team+'" aria-hidden="true">'+teamIcon+
+    '</span><div><small>'+html(teamName(team))+'</small><h2>'+html(state.profile?.nickname || say('Profil','Perfil'))+
+    '</h2><p>'+levelTitle(level)+'</p></div></div><button class="secondary" type="button" data-action="language">'+say('Español','Français')+
+    '</button></div><div class="row profile-level"><strong>'+say('Niveau ','Nivel ')+level+'</strong><span>'+
+    (level===20 ? number.format(state.progression.xp)+' XP · '+say('Niveau maximal','Nivel máximo') :
+      number.format(progress)+' / '+number.format(target)+' XP')+'</span></div>'+
+    '<progress max="'+target+'" value="'+(level===20 ? target : progress)+'" aria-label="XP"></progress>'+
+    '<p class="profile-streak">🔥 '+streak+' · '+say('Série quotidienne','Racha diaria')+'</p></div>';
+  const numbers=statTiles([[say('arbres gardés','árboles custodiados'),ownedCount(now)],
+    [say('espèces','especies'),Object.keys(state.species).length],[say('jours joués','días jugados'),allDays]],'profile-numbers');
+  const impact='<section class="entry profile-impact"><h3>'+say('Impact de l’équipe','Impacto del equipo')+
+    '</h3><p><strong>'+say('Ton équipe a gagné ','Tu equipo ha conseguido ')+treeImpact+
+    (treeImpact===1 ? say(' arbre à planter cette saison',' árbol para plantar esta temporada') :
+      say(' arbres à planter cette saison',' árboles para plantar esta temporada'))+'</strong></p><small>'+
+    say('Simulation · les plantations réelles arriveront avec nos partenaires','Simulación · las plantaciones reales llegarán con nuestros colaboradores')+
+    '</small></section><section class="entry locked-rewards"><p>🔒 '+say('Récompenses près de chez toi · bientôt','Recompensas cerca de ti · próximamente')+'</p></section>';
+  const defenses=analysis.defenses ? Math.round(100*analysis.defended/analysis.defenses)+' % ('+analysis.defended+'/'+analysis.defenses+')' :
+    say('Aucune défense terminée','Sin defensas resueltas');
+  const statistics='<details class="entry" id="profile-statistics"'+(keepOpen ? ' open' : '')+'><summary>'+
+    say('Mes statistiques','Mis estadísticas')+'</summary><h4>'+say('7 derniers jours','Últimos 7 días')+'</h4>'+
+    statTiles([[say('Minutes au parc','Minutos en el parque'),minutes],[say('Km parcourus','Km andados'),displayKm],[say('Jours joués','Días jugados'),played]])+
+    renderActivityChart(analysis.days)+statTiles([[say('Défis gagnés','Retos ganados'),analysis.wins],
+      [say('Défis perdus','Retos perdidos'),analysis.losses],[say('Défenses réussies','Defensas ganadas'),defenses]])+'</details>';
+  drawPanel('profile',header+numbers+impact+'<section><h3>'+say('Insignes','Insignias')+'</h3><ul class="badge-grid">'+badges+
+    '</ul></section>'+renderRanking(now)+statistics+'<div class="actions"><button class="secondary" type="button" data-action="tutorial">'+
+    say('Revoir le tutoriel','Volver a ver el tutorial')+'</button><button class="secondary" type="button" data-action="opinion">'+
+    say('Donner mon avis','Enviar opinión')+'</button><button class="secondary" type="button" data-action="export">'+
+    say('Exporter les données (JSON)','Exportar datos (JSON)')+'</button></div>');
 }
 function render(now = Date.now()) {
   paintWallet();
+  const streak=streakNow(now);
+  $('header-streak-count').textContent=number.format(streak);
+  $('header-streak').setAttribute('aria-label',say('Série quotidienne : ','Racha diaria: ')+streak);
   const alert = nextIncoming(now);
   $('duel-banner').hidden = !alert;
   if (alert) {
@@ -2312,96 +2367,281 @@ function registerProfile(nickname,team,now) {
     for (const record of Object.values(state.trees)) if (record.owner) record.owner=swap(record.owner);
     for (const challenge of Object.values(state.challenges)) challenge.rival=swap(challenge.rival);
     [state.points.roble,state.points[team]]=[state.points[team],state.points.roble];
+    for (const entry of state.eventos.filter(e=>e.tipo==='puntos_equipo')) {
+      [entry.puntos.roble,entry.puntos[team]]=[entry.puntos[team],entry.puntos.roble];
+    }
   }
   state.profile={nickname,team,createdAt:now};
   event('perfil_creado',null,now,null,{equipo:team});
   redeemMissions(now,true);
+  awardBadges(now);
   save();
 }
-const missionEvents=['descubrir','cuidar','despierto_encontrado','reclamar','defender'];
-function missionTitle(kind,count) {
-  const subjects={
-    descubrir:[say('Découvre','Descubre'),say('arbre','árbol'),say('arbres','árboles')],
-    cuidar:[say('Soigne','Cuida'),say('arbre','árbol'),say('arbres','árboles')],
-    despierto_encontrado:[say('Trouve','Encuentra'),say('arbre éveillé','árbol despierto'),say('arbres éveillés','árboles despiertos')],
-    reclamar:[say('Revendique','Reclama'),say('arbre','árbol'),say('arbres','árboles')],
-    defender:[say('Défends','Defiende'),say('arbre','árbol'),say('arbres','árboles')]
-  };
-  const [verb,one,many]=subjects[kind];
-  return verb+' '+count+' '+(count===1 ? one : many);
-}
+const missionEvents=['descubrir','cuidar','despierto_encontrado','reclamar','defender','retar'];
 function weekOf(date) {
   const weekday=new Date(date+'T12:00:00Z').getUTCDay();
   return shiftDate(date,-((weekday+6)%7));
 }
+function isPlayEvent(entry) {
+  return !entry.simulado &&
+    (missionEvents.includes(entry.tipo) || entry.tipo==='actividad_diaria' && entry.parque_ms>=60000);
+}
+function playedDays(since,now) {
+  const days=new Set();
+  for (const entry of state.eventos) {
+    if (!isPlayEvent(entry)) continue;
+    const time=Date.parse(entry.fecha);
+    const date=entry.dia || dayKey(time);
+    if (time<=now && date>=since) days.add(date);
+  }
+  return days;
+}
 function missionList(now) {
-  const day=dayKey(now), week=weekOf(day);
-  const rotation=Math.floor(Date.parse(day+'T00:00:00Z')/DAY);
-  const today=Array.from({length:3},(_,i)=>{
-    const kind=missionEvents[(rotation+i)%missionEvents.length];
-    const count=kind==='descubrir' ? 2+hash(day)%2 : kind==='cuidar' ? 2 : 1;
-    return {id:'daily:'+day+':'+kind,kind,count,since:day,reward:15};
-  });
-  const weeklyKind=hash(week)%2 ? 'descubrir' : 'cuidar';
-  return [{id:'founder',reward:50,count:1},...today,
-    {id:'weekly:'+week,kind:weeklyKind,count:weeklyKind==='descubrir' ? 5 : 4,since:week,reward:30}];
+  const day=dayKey(now),week=weekOf(day);
+  return [{id:'founder',reward:50,count:1,title:say('Découvre et revendique ton premier arbre','Descubre y reclama tu primer árbol')},
+    {id:'daily:'+day+':descubrir',kind:'descubrir',count:2,since:day,reward:15,title:say('Découvre 2 arbres','Descubre 2 árboles')},
+    {id:'daily:'+day+':cuidar',kind:'cuidar',count:1,since:day,reward:15,title:say('Soigne 1 arbre','Cuida 1 árbol')},
+    {id:'daily:'+day+':despierto_encontrado',kind:'despierto_encontrado',count:1,since:day,reward:15,title:say('Trouve un arbre éveillé','Encuentra un árbol despierto')},
+    {id:'weekly:'+week,kind:'weekly',count:4,since:week,reward:40,title:say('Joue 4 jours différents','Juega 4 días distintos')}];
 }
 function missionProgress(mission,now) {
   if (mission.id==='founder') {
     return Number(state.eventos.some(entry=>entry.tipo==='reclamar' && state.discoveries[entry.id_arbol]));
   }
+  if (mission.kind==='weekly') return playedDays(mission.since,now).size;
   return state.eventos.filter(entry=>{
     if (entry.tipo!==mission.kind || entry.simulado) return false;
     const time=Date.parse(entry.fecha);
-    return time>=(state.profile?.createdAt ?? now) && time<=now && dayKey(time)>=mission.since;
+    return time>=(state.profile?.createdAt ?? now) && time<=now && dayKey(time)===mission.since;
   }).length;
 }
 function redeemMissions(now,founderOnly=false) {
   if (!state.profile) return;
-  const earned=new Set(state.eventos.filter(e=>e.tipo==='mision_recompensa').map(e=>e.mision));
+  const earned=new Set(state.eventos.filter(completedMission).map(e=>e.mision));
   for (const mission of missionList(now)) {
     if ((founderOnly && mission.id!=='founder') || earned.has(mission.id) || missionProgress(mission,now)<mission.count) continue;
     gain(mission.reward);
-    event('mision_recompensa',null,now,null,{mision:mission.id,savia:mission.reward,...(mission.id==='founder' ? {insignia:'Fondateur'} : {})});
-    queueMicrotask(()=>notify(say('Mission terminée','Misión completada')+' · +'+mission.reward+' Savia'));
+    event('mision_completada',null,now,null,{mision:mission.id,savia:mission.reward,xp:mission.reward});
+    awardXP(mission.reward,now);
+    if (mission.kind==='weekly') grantRare(null,now,'mision_semanal');
+    progressNotice(say('Mission terminée','Misión completada'),'+'+mission.reward+' Savia · +'+mission.reward+' XP');
   }
 }
 function renderMissions(now) {
   const cards=missionList(now).map(mission=>{
     const founder=mission.id==='founder';
-    const title=founder ? say('Découvre et revendique ton premier arbre','Descubre y reclama tu primer árbol') :
-      missionTitle(mission.kind,mission.count);
     const progress=Math.min(mission.count,missionProgress(mission,now));
-    const won=state.eventos.some(entry=>entry.tipo==='mision_recompensa' && entry.mision===mission.id);
-    const kind=founder ? say('Première mission','Primera misión') : mission.id.startsWith('daily') ?
-      say('Aujourd’hui','Hoy') : say('Cette semaine','Esta semana');
-    return '<article class="entry mission-card"><div class="row"><small>'+kind+'</small><b>+'+
-      mission.reward+' Savia'+(founder ? ' · Fondateur' : '')+'</b></div><h3>'+title+'</h3>'+
-      '<progress max="'+mission.count+'" value="'+progress+'" aria-label="'+say('Progression','Progreso')+'"></progress><p>'+
-      (won ? say('Récompense obtenue','Recompensa obtenida') : progress+' / '+mission.count)+'</p></article>';
+    const claimed=state.eventos.find(entry=>completedMission(entry) && entry.mision===mission.id);
+    const kind=founder ? say('Première mission','Primera misión') : mission.kind==='weekly' ?
+      say('Cette semaine','Esta semana') : say('Aujourd’hui','Hoy');
+    const reward=claimed?.savia ?? mission.reward;
+    const xp=claimed?.xp ?? reward;
+    return '<article class="entry mission-card"><small>'+kind+'</small><h3>'+mission.title+'</h3><b>+'+
+      reward+' Savia · +'+xp+' XP'+(founder ? ' · Fondateur' :
+      mission.kind==='weekly' && (!claimed || claimed.tipo==='mision_completada') ? say(' · carte rare',' · carta rara') : '')+'</b>'+
+      '<progress max="'+mission.count+'" value="'+(claimed ? mission.count : progress)+'" aria-label="'+say('Progression','Progreso')+'"></progress><p>'+
+      (claimed ? say('Récompense obtenue','Recompensa obtenida') : progress+' / '+mission.count)+'</p></article>';
   }).join('');
   drawPanel('mission-board','<h2>'+say('Missions','Misiones')+'</h2>'+cards+
-    '<p class="hint">'+say('Les missions du jour et de la semaine rapportent jusqu’à 75 Savia par jour, heure d’Oxford.',
-      'Las misiones diarias y semanales dan hasta 75 Savia al día, hora de Oxford.')+'</p>');
+    '<p class="hint">'+say('Un jour de jeu compte après une action ou une minute dans le parc. Les missions suivent l’heure d’Oxford.',
+      'Un día de juego cuenta tras una acción o un minuto en el parque. Las misiones siguen la hora de Oxford.')+'</p>');
 }
 let rankView='teams';
 function renderRanking(now) {
-  const dailyPoints=pointsAt(now);
-  const teamScore=Object.fromEntries(teamKeys.map(key=>[key,(state.points[key]||0)+dailyPoints[key]]));
-  const rows=rankView==='teams' ? teamKeys.map(key=>({name:teamName(key),points:teamScore[key],mine:key===playerTeam()})) :
-    teamKeys.flatMap(key=>{
-      if(key===playerTeam()) return [{name:state.profile?.nickname || say('Toi','Tú'),points:teamScore[key],mine:true}];
-      const players=simulatedPlayers[key];
-      const first=Math.ceil(teamScore[key]*.6);
-      return [{name:players[0],points:first,simulated:true},{name:players[1],points:teamScore[key]-first,simulated:true}];
+  const points=earnedTeamPoints(weekOf(dayKey(now)),now);
+  const rows=rankView==='teams' ? teamKeys.map(team=>({name:teamName(team),points:points[team],mine:team===playerTeam()})) :
+    teamKeys.flatMap(team=>{
+      const [first,second]=simulatedPlayers[team];
+      if(team===playerTeam()) return [
+        {name:state.profile?.nickname || say('Toi','Tú'),points:points[team],mine:true},
+        {name:first,points:7,simulated:true},{name:second,points:4,simulated:true},{name:'Noé',points:2,simulated:true}
+      ];
+      const part=Math.ceil(points[team]*.6);
+      return [{name:first,points:part,simulated:true},{name:second,points:points[team]-part,simulated:true}];
     });
-  rows.sort((a,b)=>b.points-a.points || a.name.localeCompare(b.name,locale));
-  return '<section class="entry"><h3>'+say('Classement','Clasificación')+'</h3><div class="actions" role="group" aria-label="'+
-    say('Vue du classement','Vista de la clasificación')+'"><button type="button" class="secondary" data-action="rank-teams" aria-pressed="'+
-    (rankView==='teams')+'">'+say('Équipes','Equipos')+'</button><button type="button" class="secondary" data-action="rank-players" aria-pressed="'+
-    (rankView==='players')+'">'+say('Joueurs','Jugadores')+'</button></div><ol class="rank-list">'+rows.map(row=>
-      '<li'+(row.mine ? ' class="rank-mine"' : '')+'><span>'+html(row.name)+(row.simulated ? ' <small>'+say('Simulé','Simulado')+'</small>' : '')+
-      '</span><b>'+number.format(row.points)+' pts</b></li>').join('')+'</ol></section>';
+  rows.sort((a,b)=>b.points-a.points || Number(b.mine)-Number(a.mine) || a.name.localeCompare(b.name,locale));
+  const top=rows.slice(0,5), ownIndex=rows.findIndex(row=>row.mine);
+  const line=(row,index)=>'<li'+(row.mine ? ' class="rank-mine"' : '')+'><span><b>'+(index+1)+'.</b> '+html(row.name)+
+    (row.simulated ? ' <small>'+say('Simulé','Simulado')+'</small>' : '')+'</span><b>'+number.format(row.points)+' pts</b></li>';
+  return '<section class="entry"><h3>'+say('Classement','Clasificación')+'</h3><p class="hint">'+say('Cette semaine','Esta semana')+
+    '</p><div class="actions" role="group" aria-label="'+say('Vue du classement','Vista de la clasificación')+
+    '"><button type="button" class="secondary" data-action="rank-teams" aria-pressed="'+(rankView==='teams')+'">'+say('Équipes','Equipos')+
+    '</button><button type="button" class="secondary" data-action="rank-players" aria-pressed="'+(rankView==='players')+'">'+say('Joueurs','Jugadores')+
+    '</button></div><ol class="rank-list">'+top.map(line).join('')+(ownIndex>=5 ? line(rows[ownIndex],ownIndex) : '')+'</ol></section>';
+}
+
+const seasonStart='2026-11-16';
+const badgeXP=25;
+const actionXP={descubrir:10,reclamar:15,cuidar:5,defender:20,despierto_encontrado:30};
+const streakActions=new Set(['descubrir','reclamar','cuidar','defender']);
+const streakRewards={1:5,2:5,3:10,5:15,7:25};
+const rareVariants=['flor','otono','dorada'];
+const badgeDefinitions=[
+  ['founder','Fondateur','Fundador','🌱','Découvre et revendique ton premier arbre.','Descubre y reclama tu primer árbol.'],
+  ['botanist','Botaniste','Botanista','🍃','Identifie 5 espèces.','Identifica 5 especies.'],
+  ['herbarium','Herbier complet','Herbario completo','📚','Identifie 12 espèces.','Identifica 12 especies.'],
+  ['faithful','Gardien fidèle','Guardián fiel','🔥','Atteins une série de 7 jours.','Alcanza una racha de 7 días.'],
+  ['shield','Bouclier','Escudo','🛡','Réussis 3 défenses.','Gana 3 defensas.'],
+  ['conqueror','Conquérant','Conquistador','⚑','Remporte 3 défis lancés.','Gana 3 retos que hayas iniciado.'],
+  ['awakened','Éveilleur','Despertar','✦','Trouve 3 arbres éveillés.','Encuentra 3 árboles despiertos.'],
+  ['rare','Rare','Rara','💎','Obtiens une première carte rare.','Consigue tu primera carta rara.'],
+  ['remarkable','Remarquable','Remarcable','🌳','Revendique un arbre remarquable.','Reclama un árbol remarcable.'],
+  ['walker','Marcheur','Caminante','👣','Parcours 5 km dans le parc.','Recorre 5 km dentro del parque.'],
+  ['pillar','Pilier d’équipe','Pilar del equipo','🏅','Entre dans le top 3 de ton équipe cette semaine.','Entra en el top 3 semanal de tu equipo.'],
+  ['season-one','Saison 1','Temporada 1','🍂','Joue pendant la première saison.','Juega durante la primera temporada.']
+];
+function levelFor(xp=state.progression.xp) {
+  let level=1, used=0;
+  while (level<20 && xp>=used+50*level) {
+    used+=50*level;
+    level++;
+  }
+  return {level,progress:xp-used,target:50*level};
+}
+function treeLimit() {
+  const {level}=levelFor();
+  return level<5 ? 3 : level<10 ? 4 : 5;
+}
+function levelTitle(level) {
+  if (level===20) return say('Gardien de la forêt','Guardián del bosque');
+  if (level>=15) return say('Gardien confirmé','Guardián experto');
+  if (level>=10) return say('Gardien','Guardián');
+  return level>=5 ? say('Jeune pousse','Brote joven') : say('Pousse','Brote');
+}
+const progressionMessages=[];
+let progressionTimer=0;
+function progressNotice(title,message,card=false) {
+  const entry={title,message,card};
+  if (card) progressionMessages.unshift(entry);
+  else progressionMessages.push(entry);
+  if (!progressionTimer) queueMicrotask(showProgressNotice);
+}
+function showProgressNotice() {
+  if (progressionTimer || !progressionMessages.length) return;
+  const entry=progressionMessages.shift();
+  const node=$('progress-notice');
+  const opened=[...document.querySelectorAll('dialog[open]')].at(-1);
+  (opened || $('app')).append(node);
+  $('progress-notice-title').textContent=entry.title;
+  $('progress-notice-text').textContent=entry.message;
+  node.classList.toggle('card-reveal',entry.card);
+  node.hidden=false;
+  progressionTimer=setTimeout(()=>{
+    node.hidden=true;
+    progressionTimer=0;
+    showProgressNotice();
+  },entry.card ? 2800 : 1900);
+}
+function awardXP(amount,now) {
+  if (amount<=0) return;
+  const before=levelFor().level;
+  state.progression.xp+=amount;
+  const after=levelFor().level;
+  for(let level=before+1;level<=after;level++){
+    gain(10);
+    event('subir_nivel_jugador',null,now,null,{nivel:level,xp_total:state.progression.xp,savia:10});
+    progressNotice(say('Niveau ','Nivel ')+level,levelTitle(level)+' · +10 Savia');
+  }
+}
+function streakNow(now) {
+  const date=dayKey(now), last=state.progression.lastStreakDay;
+  return last===date || last===shiftDate(date,-1) ? state.progression.streak : 0;
+}
+function rewardTree(id) {
+  return trees.get(id) || Object.values(state.discoveries).at(-1)?.tree || trees.values().next().value;
+}
+function grantRare(id,now,source) {
+  const tree=rewardTree(id);
+  if (!tree) return;
+  const variant=giveCard(tree,rareVariants[Math.floor(Math.random()*rareVariants.length)],now,source);
+  revealReward(tree,variant,say('Carte rare garantie','Carta rara garantizada'));
+}
+function revealReward(tree,variant,title) {
+  progressNotice(title,speciesLabel(tree)+' · '+VARIANTS[variant],true);
+}
+function updateStreak(entry,now) {
+  if (!streakActions.has(entry.tipo) || !entry.posicion || !inPark(entry.posicion)) return;
+  const day=dayKey(now), progress=state.progression;
+  if (progress.lastStreakDay && day<=progress.lastStreakDay) return;
+  progress.streak=streakNow(now)+1;
+  progress.bestStreak=Math.max(progress.bestStreak,progress.streak);
+  progress.lastStreakDay=day;
+  const reward=streakRewards[progress.streak] || 0;
+  if (reward) gain(reward);
+  event('racha',entry.id_arbol,now,entry.posicion,{numero:progress.streak,savia:reward});
+  if (progress.streak===7) grantRare(entry.id_arbol,now,'racha');
+}
+function completedMission(entry) {
+  return entry.tipo==='mision_completada' || entry.tipo==='mision_recompensa';
+}
+function wonAttack(entry) {
+  return entry.tipo==='resultado_reto' && entry.direccion==='ataque' && entry.resultado==='ganado';
+}
+function rewardActionXP(entry) {
+  if (entry.simulado) return 0;
+  return wonAttack(entry) ? 25 : actionXP[entry.tipo] || 0;
+}
+function initializeProgression(now) {
+  if (state.progression) return;
+  const previous=state.eventos.slice();
+  state.progression={xp:0,streak:0,bestStreak:0,lastStreakDay:null,badges:[],parkMeters:0};
+  const playing=previous.some(e=>rewardActionXP(e)>0 || completedMission(e) || e.tipo==='retar' && !e.simulado);
+  if (!playing && state.savia===0 && state.stats.earned===0 && state.stats.spent===0) state.savia=20;
+  awardXP(previous.reduce((xp,e)=>xp+rewardActionXP(e)+(completedMission(e) ? e.xp ?? e.savia ?? 0 : 0),0),now);
+}
+function earnedTeamPoints(since,now) {
+  const score={roble:0,haya:0,abedul:0};
+  const today=dayKey(now);
+  for (const entry of state.eventos) {
+    if (entry.tipo!=='puntos_equipo' || entry.dia<since || entry.dia>=today) continue;
+    for (const team of teamKeys) score[team]+=entry.puntos[team] || 0;
+  }
+  if (today>=since) {
+    const points=pointsAt(now);
+    for (const team of teamKeys) score[team]+=points[team];
+  }
+  return score;
+}
+function weeklyTeamPosition(now,score) {
+  // Los tres integrantes locales simulados usan una meta semanal fija.
+  return 1+[2,4,7].filter(points=>points>score[playerTeam()]).length;
+}
+function awardBadges(now) {
+  if (!state.profile) return;
+  const earned=state.progression.badges;
+  if (earned.length===badgeDefinitions.length) return;
+  const events=state.eventos;
+  const ownSpecies=Object.keys(state.species).length;
+  const count=type=>events.filter(entry=>entry.tipo===type && !entry.simulado).length;
+  const weekly=earnedTeamPoints(weekOf(dayKey(now)),now);
+  const flags=[
+    events.some(entry=>completedMission(entry) && entry.mision==='founder'),ownSpecies>=5,ownSpecies>=12,
+    state.progression.bestStreak>=7,count('defender')>=3,events.filter(wonAttack).length>=3,
+    count('despierto_encontrado')>=3,
+    Object.values(state.cards).some(card=>rareVariants.some(variant=>card.variants[variant]>0)),
+    events.some(entry=>entry.tipo==='reclamar' && (entry.categoria || trees.get(entry.id_arbol)?.tier || state.trees[entry.id_arbol]?.tree?.tier)==='remarcable'),
+    state.progression.parkMeters>=5000,
+    weekly[playerTeam()]>0 && weeklyTeamPosition(now,weekly)<=3,
+    playedDays(seasonStart,now).size>0
+  ];
+  for (let i=0;i<badgeDefinitions.length;i++) {
+    const [id,fr,es]=badgeDefinitions[i];
+    if (!flags[i] || earned.includes(id)) continue;
+    earned.push(id);
+    event('insignia',null,now,null,{insignia:id,xp:badgeXP});
+    awardXP(badgeXP,now);
+    progressNotice(say('Insigne débloqué','Insignia desbloqueada'),say(fr,es)+' · +'+badgeXP+' XP');
+  }
+}
+function trackProgress(entry,now) {
+  if (!state.progression || entry.simulado) return;
+  const xp=rewardActionXP(entry);
+  if (xp) {
+    awardXP(xp,now);
+    updateStreak(entry,now);
+  }
+  if (missionEvents.includes(entry.tipo)) redeemMissions(now);
+  if (xp || entry.tipo==='retar') awardBadges(now);
 }
 
 $('map-bottom').addEventListener('cancel',event=>{
@@ -2421,6 +2661,7 @@ $('welcome-form').addEventListener('submit',event=>{
   if (!state.tutorialSeen) openTutorial();
   render();
 });
+initializeProgression(Date.now());
 migrateAnalytics(Date.now());
 initMap();
 if (state.cache?.data || SNAPSHOT) {
@@ -2428,6 +2669,8 @@ if (state.cache?.data || SNAPSHOT) {
   setMapStatus(catalogMessage(state.cache?.data ? say("Données OpenStreetMap en cache","Datos de OpenStreetMap guardados") : say("Copie OpenStreetMap","Copia de OpenStreetMap")),false);
 }
 tick();
+awardBadges(Date.now());
+save();
 showTab('mapa');
 const previousTestPosition = state.testPosition;
 setMode(mode);
