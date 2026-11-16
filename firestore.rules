@@ -1,0 +1,230 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signed() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+    function millis() { return request.time.toMillis(); }
+    function player(id) { return /databases/$(database)/documents/players/$(id); }
+    function clan(id) { return /databases/$(database)/documents/clans/$(id); }
+    function tree(id) { return /databases/$(database)/documents/trees/$(id); }
+    function duel(id) { return /databases/$(database)/documents/challenges/$(id); }
+    function codeRef(code) { return /databases/$(database)/documents/clanCodes/$(code); }
+    function me() { return get(player(uid())).data; }
+    function nearNow(value) { return value is int && value >= millis() - 60000 && value <= millis() + 60000; }
+    function member(id) { return signed() && id is string && me().clanId == id; }
+    function guardedByMe(owner) {
+      return signed() && (owner == uid() || (me().clanId is string && get(player(owner)).data.clanId == me().clanId));
+    }
+    function admin() {
+      return signed() && exists(/databases/$(database)/documents/admins/$(uid())) && me().pseudo == 'admin-forestrix';
+    }
+    function playerFields(p) {
+      return p.keys().hasOnly(['pseudo','nivel','xp','clanId','puntosTemporada','updatedAt','slots','receipts','leftUntil'])
+        && p.pseudo is string && p.pseudo.size() <= 24 && (p.clanId == null || p.clanId is string)
+        && p.nivel is int && p.nivel >= 1 && p.nivel <= 20 && p.xp is int && p.xp >= 0
+        && p.xp >= 25 * p.nivel * (p.nivel - 1)
+        && (p.nivel == 20 || p.xp < 25 * p.nivel * (p.nivel + 1))
+        && p.puntosTemporada is int && p.puntosTemporada >= 0
+        && p.slots is list && p.slots.size() <= 5 && p.receipts is list && p.receipts.size() <= 40
+        && p.leftUntil is int;
+    }
+    function membershipChange(old, next) {
+      return (old.clanId == next.clanId && old.leftUntil == next.leftUntil) ||
+        (old.clanId == null && next.clanId is string && old.leftUntil <= millis() && next.leftUntil == old.leftUntil
+          && next.nivel >= 5 && uid() in getAfter(clan(next.clanId)).data.members) ||
+        (old.clanId is string && next.clanId == null && nearNow(next.leftUntil - 86400000)
+          && !(uid() in getAfter(clan(old.clanId)).data.members));
+    }
+    match /players/{id} {
+      allow read: if signed();
+      allow create: if signed() && uid() == id && playerFields(request.resource.data)
+        && request.resource.data.clanId == null && request.resource.data.leftUntil == 0
+        && request.resource.data.slots.size() == 0 && request.resource.data.receipts.size() == 0;
+      allow update: if signed() && uid() == id && playerFields(request.resource.data)
+        && resource.data.xp <= request.resource.data.xp && membershipChange(resource.data,request.resource.data);
+      match /private/{file} {
+        allow read: if signed() && uid() == id;
+        allow create, update: if signed() && uid() == id && file in ['save','membership'];
+      }
+    }
+    match /admins/{id} {
+      allow get: if signed() && uid() == id;
+    }
+
+    function validTree(t) {
+      return t.keys().hasOnly(['ownerUid','ownerPseudo','clanId','tier','acquiredAt','protectedUntil','vitalityUntil','level','lastCareBy','lastCareAt','activeChallenge','ledger'])
+        && t.ownerUid is string && t.ownerPseudo is string && (t.clanId == null || t.clanId is string)
+        && t.tier in ['comun','notable','remarcable'] && t.level is int && t.level >= 1 && t.level <= 4
+        && t.acquiredAt is int && t.protectedUntil == t.acquiredAt + 3600000 && t.vitalityUntil is int && t.ledger is map;
+    }
+    function freshClaim(id, next) {
+      let p = getAfter(player(uid())).data;
+      return next.ownerUid == uid() && next.ownerPseudo == p.pseudo && next.clanId == p.clanId
+        && id in p.slots && p.slots.size() <= (p.nivel < 5 ? 3 : (p.nivel < 10 ? 4 : 5))
+        && nearNow(next.acquiredAt) && next.vitalityUntil == next.acquiredAt + 604800000
+        && next.level == 1 && next.lastCareAt == null && next.lastCareBy == null && next.activeChallenge == null;
+    }
+    function opensDuel(id, old, next, change) {
+      let d = getAfter(duel(next.activeChallenge)).data;
+      return change.hasOnly(['activeChallenge','ledger']) && old.activeChallenge == null
+        && next.activeChallenge is string && d.treeId == id && d.status == 'open'
+        && d.attackerUid == uid() && d.defenderUid == old.ownerUid;
+    }
+    function resolvesDuel(id, old, next, change) {
+      let d = get(duel(old.activeChallenge)).data;
+      let after = getAfter(duel(old.activeChallenge)).data;
+      return d.treeId == id && d.status == 'open' && next.activeChallenge == null &&
+        ((after.status == 'defended' && guardedByMe(old.ownerUid) && change.hasOnly(['activeChallenge','ledger'])) ||
+         (after.status == 'won' && millis() >= d.expiresAt && next.ownerUid == d.attackerUid
+          && next.tier == old.tier && next.acquiredAt == d.expiresAt && next.vitalityUntil == d.expiresAt + 604800000
+          && next.level == 1 && next.lastCareAt == null && next.lastCareBy == null
+          && next.clanId == get(player(d.attackerUid)).data.clanId && next.ownerPseudo == get(player(d.attackerUid)).data.pseudo));
+    }
+    function changesTree(id, old, next) {
+      let change = next.diff(old).affectedKeys();
+      return
+        (old.activeChallenge == null && millis() >= old.vitalityUntil + 259200000
+          && next.tier == old.tier && freshClaim(id,next)) ||
+        (guardedByMe(old.ownerUid) && change.hasOnly(['lastCareBy','lastCareAt','vitalityUntil','ledger'])
+          && next.lastCareBy == uid() && nearNow(next.lastCareAt) && next.lastCareAt != old.lastCareAt
+          && millis() < old.vitalityUntil + 259200000 && next.vitalityUntil == next.lastCareAt + 604800000) ||
+        (uid() == old.ownerUid && change.hasOnly(['level','clanId','ledger'])
+          && next.level >= old.level && next.level <= old.level + 1
+          && (next.clanId == old.clanId || next.clanId == getAfter(player(uid())).data.clanId)) ||
+        (old.activeChallenge == null && next.activeChallenge is string && opensDuel(id,old,next,change)) ||
+        (old.activeChallenge is string && next.activeChallenge == null && resolvesDuel(id,old,next,change));
+    }
+    match /trees/{id} {
+      allow read: if signed();
+      allow create: if signed() && validTree(request.resource.data) && freshClaim(id,request.resource.data)
+        && request.resource.data.ledger.size() == 0;
+      allow update: if signed() && validTree(request.resource.data) && changesTree(id,resource.data,request.resource.data);
+    }
+    match /challenges/{id} {
+      allow read: if signed();
+      allow create: if signed() && newDuel(id,request.resource.data);
+      allow update: if signed() && resolveState(id,resource.data,request.resource.data);
+    }
+    function newDuel(id,d) {
+      let t = get(tree(d.treeId)).data;
+      let other = get(player(d.defenderUid)).data;
+      let p = getAfter(player(uid())).data;
+      return d.keys().hasOnly(['treeId','attackerUid','defenderUid','price','createdAt','expiresAt','status'])
+        && d.status == 'open' && d.attackerUid == uid() && uid() != d.defenderUid && t.ownerUid == d.defenderUid
+        && d.price is int && d.price >= 10 && nearNow(d.createdAt) && d.expiresAt == d.createdAt + 900000
+        && t.protectedUntil <= millis() && millis() < t.vitalityUntil + 259200000
+        && (p.clanId == null || p.clanId != other.clanId)
+        && d.treeId in p.slots && p.slots.size() <= (p.nivel < 5 ? 3 : (p.nivel < 10 ? 4 : 5))
+        && t.activeChallenge == null && getAfter(tree(d.treeId)).data.activeChallenge == id;
+    }
+    function resolveState(id,old,next) {
+      let change = next.diff(old).affectedKeys();
+      let after = getAfter(tree(old.treeId)).data;
+      return old.status == 'open' && next.resolvedAt == request.time
+        && get(tree(old.treeId)).data.activeChallenge == id && after.activeChallenge == null &&
+        ((next.status == 'defended' && millis() < old.expiresAt && change.hasOnly(['status','resolvedAt','defendedBy'])
+          && next.defendedBy == uid() && guardedByMe(old.defenderUid) && after.ownerUid == old.defenderUid) ||
+         (next.status == 'won' && millis() >= old.expiresAt && change.hasOnly(['status','resolvedAt'])
+          && after.ownerUid == old.attackerUid));
+    }
+
+    function clanFields(c) {
+      return c.name is string && c.name.size() >= 3 && c.name.size() <= 20
+        && c.emblem in ['🌳','🍃','🌿','🍄','🦉','🦊','🐝','🌻']
+        && c.color in ['#42745a','#397aa5','#915b58','#6b5894','#986621','#397d77']
+        && c.open is bool && c.archived is bool && c.members is map
+        && c.memberCount == c.members.size() && c.memberCount <= 15
+        && c.points is int && c.points >= 0 && c.weekGoal == 40
+        && c.weekProgress is int && c.weekProgress >= 0 && c.weekProgress <= 40
+        && c.weekKey is string && c.weekKey.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}');
+    }
+    function correctCode(id) {
+      let proof = getAfter(/databases/$(database)/documents/players/$(uid())/private/membership).data;
+      return proof.clanId == id && get(codeRef(proof.code)).data.clanId == id;
+    }
+    function joinsClan(id,old,next,change) {
+      return change.hasOnly(['members','memberCount'])
+        && !old.archived && old.memberCount < 15 && next.memberCount == old.memberCount + 1
+        && !(uid() in old.members) && uid() in next.members && nearNow(next.members[uid()])
+        && next.members.diff(old.members).affectedKeys().hasOnly([uid()])
+        && me().clanId == null && me().nivel >= 5 && me().leftUntil <= millis()
+        && getAfter(player(uid())).data.clanId == id && (old.open || correctCode(id));
+    }
+    function leavesClan(id,old,next,change) {
+      return change.hasOnly(['members','memberCount','ownerUid','archived','open']) && member(id)
+        && uid() in old.members && !(uid() in next.members) && next.members.diff(old.members).affectedKeys().hasOnly([uid()])
+        && next.memberCount == old.memberCount - 1 && getAfter(player(uid())).data.clanId == null
+        && (next.memberCount == 0
+          ? next.archived && !next.open && next.ownerUid == null
+          : !next.archived && next.open == old.open &&
+            (old.ownerUid == uid() ? next.ownerUid in next.members : next.ownerUid == old.ownerUid));
+    }
+    function caredForClan(old,next) {
+      let before = get(tree(next.lastCareTree)).data;
+      let after = getAfter(tree(next.lastCareTree)).data;
+      return after.lastCareBy == uid() && nearNow(after.lastCareAt) && before.lastCareAt != after.lastCareAt
+        && next.weekKey >= old.weekKey
+        && (next.weekKey == old.weekKey
+          ? next.weekProgress == (old.weekProgress == 40 ? 40 : old.weekProgress + 1)
+          : next.weekProgress == 1);
+    }
+    match /clans/{id} {
+      allow read: if signed();
+      allow create: if signed() && clanFields(request.resource.data) &&
+        request.resource.data.ownerUid == uid() && request.resource.data.createdAt == request.time
+        && request.resource.data.memberCount == 1 && uid() in request.resource.data.members
+        && nearNow(request.resource.data.members[uid()]) && !request.resource.data.archived
+        && request.resource.data.points == 0 && request.resource.data.weekProgress == 0 && me().clanId == null
+        && me().nivel >= 5 && me().leftUntil <= millis() && getAfter(player(uid())).data.clanId == id;
+      allow update: if signed() && clanFields(request.resource.data)
+        && updateClan(id,resource.data,request.resource.data);
+
+      match /private/{id2} {
+        allow read: if member(id);
+        allow create: if signed() && id2 == 'code' && getAfter(clan(id)).data.ownerUid == uid()
+          && request.resource.data.code.matches('[A-Z]{6}')
+          && getAfter(codeRef(request.resource.data.code)).data.clanId == id;
+      }
+      match /notices/{note} {
+        allow read: if member(id);
+        allow create: if signed() && request.resource.data.uid == uid() && request.resource.data.at == request.time
+          && request.resource.data.reactions.size() == 0 && request.resource.data.pseudo == me().pseudo
+          && ((request.resource.data.type in ['clan_creado','clan_unido'] && getAfter(player(uid())).data.clanId == id)
+            || (request.resource.data.type in ['clan_salido','cuidar','defender'] && member(id)));
+        allow update: if member(id) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+          && request.resource.data.reactions.diff(resource.data.reactions).affectedKeys().hasOnly([uid()])
+          && (!(uid() in request.resource.data.reactions) || request.resource.data.reactions[uid()] in [0,1,2,3]);
+      }
+    }
+    function updateClan(id,old,next) {
+      let change = next.diff(old).affectedKeys();
+      return joinsClan(id,old,next,change) || leavesClan(id,old,next,change) ||
+        (!old.archived && member(id) &&
+         ((change.hasOnly(['points']) && next.points >= old.points)
+           || (change.hasOnly(['weekKey','weekProgress','lastCareTree']) && caredForClan(old,next))));
+    }
+    match /clanCodes/{code} {
+      allow get: if signed();
+      allow create: if signed() && code.matches('[A-Z]{6}')
+        && getAfter(clan(request.resource.data.clanId)).data.ownerUid == uid()
+        && getAfter(/databases/$(database)/documents/clans/$(request.resource.data.clanId)/private/code).data.code == code;
+    }
+    match /clanGoals/{id} {
+      allow read: if signed() && uid() in resource.data.eligible;
+      allow create: if signed() && validGoal(id,request.resource.data);
+    }
+    function validGoal(id,g) {
+      let before = get(clan(g.clanId)).data;
+      let after = getAfter(clan(g.clanId)).data;
+      return member(g.clanId) && id == g.clanId + '_' + g.week && g.at == request.time
+        && g.week == after.weekKey && after.weekProgress == 40 && before.weekProgress == 39
+        && g.eligible is list && g.eligible.toSet() == after.members.keys().toSet();
+    }
+    match /events/{id} {
+      allow read: if signed() && (resource.data.uid == uid() || admin());
+      allow create: if signed() && request.resource.data.uid == uid() && request.resource.data.tipo is string;
+      allow update: if signed() && resource.data.uid == uid() && resource.data.tipo == 'actividad_diaria'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['juego_ms','parque_ms','metros']);
+    }
+  }
+}
