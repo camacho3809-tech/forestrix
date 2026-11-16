@@ -30,7 +30,7 @@
   main,.screen{min-height:0}
   .screen{height:100%;overflow:auto}
   .content{max-width:790px;margin:auto;padding:16px}
-  .map-screen{display:grid;grid-template-rows:auto minmax(100px,1fr) auto}
+  .map-screen{display:grid;grid-template-rows:auto auto minmax(100px,1fr) auto}
   .map-toolbar{padding:6px 10px;background:var(--white);display:flex;align-items:center;justify-content:space-between;gap:8px;z-index:2}
   #position-mode{flex-shrink:0}
   #position-mode,#locate,.close{background:#fff;color:var(--pine);border:1px solid #c5d3c8;border-radius:8px;min-height:44px;padding:5px 9px;font-weight:700}
@@ -77,6 +77,31 @@
   #species-dialog::backdrop{background:#17382b88}
   #species-dialog select{width:100%;min-height:44px;margin:6px 0 12px;padding:7px;color:var(--ink);font:inherit;border:1px solid #b9cbbd;border-radius:8px;background:#fff}
   #species-dialog label{display:block;margin-top:10px;font-weight:700}
+  .recommendation{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;border-block:1px solid #d3e6d9;background:#eaf5ec}
+  .recommendation h2{font-size:12px;letter-spacing:0;color:var(--green)}
+  .recommendation p{font-size:13px}
+  .recommendation button{flex-shrink:0}
+  .activity-chart{margin:8px 0 12px}
+  .activity-chart ul{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;padding:0;margin:8px 0 0;list-style:none}
+  .activity-chart li{min-width:0;display:grid;grid-template-rows:auto 100px auto;gap:4px;text-align:center;font-size:11px}
+  .bar-value{font-weight:700;white-space:nowrap}
+  .bar-track{display:flex;align-items:end;justify-content:center;border-bottom:1px solid #bfd2c3;background:repeating-linear-gradient(0deg,#edf4ee 0,#edf4ee 1px,transparent 1px,transparent 25px)}
+  .bar-track span{width:min(29px,75%);background:var(--green);border-radius:5px 5px 0 0}
+  .bar-day{color:var(--muted);white-space:nowrap}
+  .risk{border-radius:12px;padding:3px 8px;font-size:12px;font-weight:700}
+  .risk.alto{background:#fbe2da;color:#8b2820}
+  .risk.medio{background:#f9ebcf;color:#6d490d}
+  .risk.bajo{background:#e5f0e6;color:#225537}
+  #profile h4{font-size:15px;margin:0}
+  .stat-section{margin-bottom:14px}
+  #tutorial-dialog,#opinion-dialog{width:min(460px,calc(100% - 26px));max-height:85dvh;border:1px solid var(--line);border-radius:14px;background:var(--white);color:var(--ink);padding:17px}
+  #tutorial-dialog::backdrop,#opinion-dialog::backdrop{background:#17382b88}
+  #tutorial-copy{margin:8px 0 12px}
+  #opinion-form>label{display:block;margin:10px 0 4px;font-weight:700}
+  #opinion-form textarea{display:block;width:100%;min-height:66px;border:1px solid #b9cbbd;border-radius:8px;padding:7px;resize:vertical;font:inherit;color:var(--ink)}
+  #opinion-form fieldset{border:0;margin:9px 0 0;padding:0}
+  #opinion-form legend{padding:0;font-weight:700}
+  #opinion-form fieldset label{display:inline-flex;align-items:center;min-height:44px;margin-right:12px}
   .species-facts{padding-left:20px;margin:5px 0 10px}
   .species-facts li+li{margin-top:4px}
   #storage-error{background:#fff0d6;color:#5e3100;text-align:center;font-size:12px;padding:3px 8px}
@@ -102,6 +127,10 @@
         <div><div id="radar">Radar · esperando ubicación</div><small id="gps-status" aria-live="polite">Buscando GPS…</small></div>
         <button id="position-mode" type="button">Modo prueba</button>
       </div>
+      <aside class="recommendation" aria-labelledby="recommendation-heading">
+        <div><h2 id="recommendation-heading">Recomendación del día</h2><p id="recommendation-text"></p></div>
+        <button class="secondary" id="recommendation-tree" type="button" data-action="show" hidden>Ver árbol</button>
+      </aside>
       <div class="map-wrap">
         <div id="map" aria-label="Mapa de University Parks"></div>
         <p id="tile-warning" role="status" hidden>Las teselas del mapa no están disponibles. Se muestra el plano local de calles y senderos.</p>
@@ -145,6 +174,36 @@
     <div class="actions">
       <button class="primary" type="submit">Guardar descubrimiento</button>
       <button class="secondary" id="cancel-species" type="button">Cancelar</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="tutorial-dialog" aria-labelledby="tutorial-title">
+  <small id="tutorial-position"></small>
+  <h2 id="tutorial-title"></h2>
+  <p id="tutorial-copy"></p>
+  <div class="actions">
+    <button class="secondary" id="tutorial-back" type="button" hidden>Atrás</button>
+    <button class="primary" id="tutorial-next" type="button" autofocus>Siguiente</button>
+    <button class="secondary" id="tutorial-close" type="button">Cerrar</button>
+  </div>
+</dialog>
+<dialog id="opinion-dialog" aria-labelledby="opinion-title">
+  <form id="opinion-form">
+    <h2 id="opinion-title">Enviar opinión</h2>
+    <p class="hint">Se guarda en este dispositivo y se incluye en la exportación JSON.</p>
+    <label for="opinion-liked">¿Qué te ha gustado?</label>
+    <textarea id="opinion-liked" name="liked" maxlength="1200" required autofocus></textarea>
+    <label for="opinion-confusing">¿Qué te ha aburrido o confundido?</label>
+    <textarea id="opinion-confusing" name="confusing" maxlength="1200" required></textarea>
+    <fieldset><legend>¿Volverías mañana?</legend>
+      <label><input type="radio" name="tomorrow" value="sí" required> Sí</label>
+      <label><input type="radio" name="tomorrow" value="quizás"> Quizás</label>
+      <label><input type="radio" name="tomorrow" value="no"> No</label>
+    </fieldset>
+    <p class="hint" id="opinion-error" role="alert" hidden>Completa las tres respuestas para guardar tu opinión.</p>
+    <div class="actions">
+      <button class="primary" type="submit">Guardar opinión</button>
+      <button class="secondary" id="cancel-opinion" type="button">Cancelar</button>
     </div>
   </form>
 </dialog>
@@ -367,7 +426,9 @@ function coords(fix = locationFix) {
   return fix ? {lat:fix.lat,lng:fix.lng,modo:fix.mode === 'test' ? 'prueba' : 'gps'} : null;
 }
 function event(tipo, id, now, posicion = coords(), extra = {}) {
-  state.eventos.push({tipo, fecha:new Date(now).toISOString(), id_arbol:id, posicion, ...extra});
+  const entry = {tipo, fecha:new Date(now).toISOString(), id_arbol:id, posicion, ...extra};
+  state.eventos.push(entry);
+  return entry;
 }
 function meters(a,b) {
   const rad = Math.PI / 180;
@@ -568,15 +629,15 @@ function settleChallenge(id,challenge,now) {
   if (ownerMatches && defended) {
     const tree = trees.get(id);
     event('defender',id,now,tree ? {lat:tree.lat,lng:tree.lng,modo:'rival'} : null,{equipo:challenge.rival,simulado:true});
-    state.stats.losses++;
+    recordChallengeResult(id,'out',false,now);
     notify('El rival defendió su árbol. Reto perdido.');
   } else if (ownerMatches && attack) {
     takeTree(id,'roble',now);
-    state.stats.wins++;
+    recordChallengeResult(id,'out',true,now);
     notify('¡Reto ganado! El árbol ya es tuyo.');
   } else if (ownerMatches) {
     takeTree(id,challenge.rival,now);
-    state.stats.losses++;
+    recordChallengeResult(id,'in',false,now);
     notify(TEAMS[challenge.rival] + ' ha ganado un reto por tu árbol.');
   }
   delete state.challenges[id];
@@ -633,23 +694,25 @@ function tick(now = Date.now()) {
   lastTick = now;
   let changed = advanceWorld(now);
   if (visibleSince !== null && now > before) {
-    state.gameMs += now - Math.max(before,visibleSince);
-    changed = true;
-  }
-  if (!document.hidden && inside && locationFix && now > before && now-before <= 10000) {
-    let cursor = before;
+    const start = Math.max(before,visibleSince);
+    state.gameMs += now - start;
+    const inParkDuringTick = !document.hidden && inside && locationFix && now-before <= 10000;
+    let cursor = start;
     while (cursor < now) {
       const date = dayKey(cursor);
       const end = date === dayKey(now) ? now : nextMidnight(cursor);
       const elapsed = end-cursor;
-      const totals = daily(date);
-      totals.parkMs += elapsed;
-      state.stats.parkMs += elapsed;
-      const earned = Math.min(12,Math.floor(totals.parkMs/VISIT_BLOCK)) - totals.timeSavia;
-      if (earned > 0) {
-        totals.timeSavia += earned;
-        gain(earned);
-        notify('+' + earned + ' Savia por tu tiempo en el parque.');
+      recordActivity(date,cursor,elapsed,inParkDuringTick ? elapsed : 0);
+      if (inParkDuringTick) {
+        const totals = daily(date);
+        totals.parkMs += elapsed;
+        state.stats.parkMs += elapsed;
+        const earned = Math.min(12,Math.floor(totals.parkMs/VISIT_BLOCK)) - totals.timeSavia;
+        if (earned > 0) {
+          totals.timeSavia += earned;
+          gain(earned);
+          notify('+' + earned + ' Savia por tu tiempo en el parque.');
+        }
       }
       cursor = end;
     }
@@ -732,7 +795,7 @@ function act(action,id,identification = null) {
     notify('Reto iniciado. Se resolverá en 2 minutos.');
   } else if (action === 'defend') {
     delete state.challenges[id];
-    state.stats.wins++;
+    recordChallengeResult(id,'in',true,now);
     gain(10);
     event('defender',id,now,coords(),{savia:10});
     notify('¡Defensa ganada! +10 Savia. El árbol sigue siendo tuyo.');
@@ -745,7 +808,7 @@ function act(action,id,identification = null) {
   save();
   render(now);
 }
-function setLocation(lat,lng,accuracy = null) {
+function setLocation(lat,lng,accuracy = null,restored = false) {
   const now = tick();
   const previous = locationFix;
   const fix = {lat,lng,accuracy,mode};
@@ -753,7 +816,10 @@ function setLocation(lat,lng,accuracy = null) {
     const distance = meters(walkAnchor,fix);
     const elapsed = (now-walkAnchor.time)/1000;
     if (mode === 'test' || (accuracy <= 50 && (elapsed > 120 || distance >= Math.max(5,accuracy/2)))) {
-      if (mode === 'test' || (elapsed > 0 && elapsed <= 120 && distance/elapsed <= 4)) state.stats.meters += distance;
+      if (mode === 'test' || (elapsed > 0 && elapsed <= 120 && distance/elapsed <= 4)) {
+        state.stats.meters += distance;
+        recordActivity(dayKey(now),now,0,0,distance);
+      }
       walkAnchor = {...fix,time:now};
     }
   } else if (mode === 'test' || accuracy <= 50) {
@@ -764,7 +830,7 @@ function setLocation(lat,lng,accuracy = null) {
   if (mode === 'test') state.testPosition = {lat,lng};
   if (entered !== inside) {
     inside = entered;
-    event(inside ? 'entrar_parque' : 'salir_parque',null,now);
+    event(inside ? 'entrar_parque' : 'salir_parque',null,now,coords(),restored ? {ubicacion_restaurada:true} : {});
   }
   checkAwake(now);
   save();
@@ -1047,6 +1113,12 @@ function renderMap(now) {
   const nearest = locationFix ? Math.min(...candidates.map(tree=>meters(locationFix,tree))) : Infinity;
   const heat = nearest < 45 ? 'caliente' : nearest < 110 ? 'templado' : 'frío';
   const radarEl = $('radar');
+  const tip = recommendation(now,candidates,heat);
+  const tipText = $('recommendation-text');
+  if (tipText.textContent !== tip.text) tipText.textContent = tip.text;
+  const tipButton = $('recommendation-tree');
+  tipButton.hidden = !tip.id;
+  if (tip.id) tipButton.dataset.id = tip.id;
   radarEl.dataset.heat = candidates.length && locationFix ? heat : '';
   radarEl.textContent = !liveCatalog.length ? 'Radar · esperando árboles' : !candidates.length ? 'Radar · encontrados por hoy' :
     !locationFix ? 'Radar · esperando ubicación' : 'Radar · ' + heat;
@@ -1106,7 +1178,7 @@ function renderHerbarium() {
     '</div><h3>Cartas</h3>'+(cards ? '<div class="cards">'+cards+'</div>' : '<p class="hint">Descubre o cuida un árbol para ganar una carta.</p>'));
 }
 function renderMyTrees(now) {
-  const list = [...trees.values()].filter(tree => state.trees[tree.id]?.owner === 'roble' && status(tree.id,now) !== 'libre');
+  const list = currentTrees(now);
   const entries = list.map(tree => {
     const record = state.trees[tree.id];
     const days = vitality(record,now);
@@ -1125,29 +1197,190 @@ function renderMyTrees(now) {
     '<p class="hint">Cada árbol nuevo queda protegido durante 1 hora. Si te retan, tienes 15 minutos para defenderlo.</p>'+
     '<div class="entries"><h3>Retos que has iniciado</h3>'+(outgoing || '<p class="hint">Sin retos salientes.</p>')+'</div>');
 }
+function shiftDate(date, days) {
+  return new Date(Date.parse(date + 'T12:00:00Z') + days * DAY).toISOString().slice(0,10);
+}
+const activityLog = new Map(state.eventos.filter(entry=>entry.tipo === 'actividad_diaria').map(entry=>[entry.dia,entry]));
+function recordActivity(date,now,gameMs = 0,parkMs = 0,distance = 0) {
+  let entry = activityLog.get(date);
+  if (!entry) {
+    entry = event('actividad_diaria',null,now,null,{dia:date,juego_ms:0,parque_ms:0,metros:0});
+    activityLog.set(date,entry);
+  }
+  entry.juego_ms += gameMs;
+  entry.parque_ms += parkMs;
+  entry.metros += distance;
+}
+function migrateAnalytics(now) {
+  if (state.analyticsVersion) return;
+  const incoming = state.eventos.filter(entry=>entry.tipo === 'retar' && entry.simulado).length;
+  const defended = state.eventos.filter(entry=>entry.tipo === 'defender' && !entry.simulado).length;
+  const pending = Object.values(state.challenges).filter(challenge=>challenge.direction === 'in').length;
+  if (state.stats.wins || state.stats.losses || defended) {
+    event('historial_retos',null,now,null,{ganados:state.stats.wins,perdidos:state.stats.losses,
+      defensas_ganadas:defended,defensas_resueltas:Math.max(defended,incoming-pending)});
+  }
+  if (state.daily.parkMs && !activityLog.has(state.daily.date)) {
+    recordActivity(state.daily.date,now,0,state.daily.parkMs);
+  }
+  state.analyticsVersion = 1;
+}
+function recordChallengeResult(id,direction,won,now) {
+  state.stats[won ? 'wins' : 'losses']++;
+  event('resultado_reto',id,now,null,{direccion:direction === 'in' ? 'defensa' : 'ataque',resultado:won ? 'ganado' : 'perdido'});
+}
+function currentTrees(now) {
+  return [...trees.values()].filter(tree=>state.trees[tree.id]?.owner === 'roble' && status(tree.id,now) !== 'libre');
+}
+function nextIncoming(now) {
+  return Object.entries(state.challenges).filter(([,challenge])=>challenge.direction === 'in' && challenge.ends > now)
+    .sort((a,b)=>a[1].ends-b[1].ends)[0];
+}
+function recommendation(now,candidates,heat) {
+  const incoming = nextIncoming(now);
+  if (incoming) {
+    const [id,challenge] = incoming;
+    return {id,text:'¡Defiende tu ' + (trees.get(id)?.label || 'árbol') + '! Quedan ' + Math.ceil((challenge.ends-now)/60000) + ' min'};
+  }
+  const urgent = currentTrees(now).map(tree=>({tree,days:vitality(state.trees[tree.id],now)}))
+    .filter(item=>item.days <= 2).sort((a,b)=>a.days-b.days)[0];
+  if (urgent) return {id:urgent.tree.id,text:'Tu ' + urgent.tree.label + ' necesita cuidados (' + urgent.days + (urgent.days === 1 ? ' día)' : ' días)')};
+  if (candidates.length) {
+    const count = candidates.length;
+    const subject = count === 1 ? 'Hay 1 árbol despierto' : 'Hay ' + count + ' árboles despiertos';
+    return {text:subject + (locationFix ? '. El radar dice ' + heat + '.' : '. Ubícate en el mapa para usar el radar.')};
+  }
+  const nearby = [...trees.values()].filter(tree=>!restriction('claim',tree,now))
+    .sort((a,b)=>distanceTo(a)-distanceTo(b))[0];
+  if (nearby) return {id:nearby.id,text:'Puedes reclamar un árbol ' + TIERS[nearby.tier].name.toLowerCase() + ' cerca de ti.'};
+  const spent = state.daily.date === dayKey(now) ? state.daily.discoverySavia / DISCOVERY_REWARD : 0;
+  const left = Math.max(0,DISCOVERY_DAILY_LIMIT-spent);
+  return {text:'Descubre árboles nuevos. Te ' + (left === 1 ? 'queda 1 recompensa hoy.' : 'quedan ' + left + ' recompensas hoy.')};
+}
+function getAnalytics(now) {
+  const today = dayKey(now);
+  const days = new Map(Array.from({length:7},(_,i)=>[shiftDate(today,i-6),{played:false,visits:0,parkMs:0,meters:0}]));
+  const careDays = new Map();
+  const foundSpecies = new Set();
+  const summary = {today,days,careDays,foundSpecies,wins:0,losses:0,defended:0,defenses:0,rare:0,spent:0,treesFound:0};
+  for (const entry of state.eventos) {
+    if (entry.tipo === 'historial_retos') {
+      summary.wins += entry.ganados;
+      summary.losses += entry.perdidos;
+      summary.defended += entry.defensas_ganadas;
+      summary.defenses += entry.defensas_resueltas;
+      continue;
+    }
+    if (entry.tipo === 'resultado_reto') {
+      const won = entry.resultado === 'ganado';
+      summary[won ? 'wins' : 'losses']++;
+      if (entry.direccion === 'defensa') {
+        summary.defenses++;
+        if (won) summary.defended++;
+      }
+      continue;
+    }
+    if (['flor','otono','dorada'].includes(entry.carta)) summary.rare++;
+    summary.spent += entry.savia_gastada || 0;
+    if (entry.tipo === 'descubrir') {
+      summary.treesFound++;
+      const species = entry.especie || state.discoveries[entry.id_arbol]?.tree.species;
+      if (species) {
+        const known = SPECIES_BY_KEY.get(speciesKey(species));
+        if (known) foundSpecies.add(known[1]);
+      }
+    }
+    const timestamp = Date.parse(entry.fecha);
+    if (!entry.dia && !Number.isFinite(timestamp)) continue;
+    const date = entry.dia || dayKey(timestamp);
+    if (entry.tipo === 'cuidar') {
+      if (!careDays.has(entry.id_arbol)) careDays.set(entry.id_arbol,new Set());
+      careDays.get(entry.id_arbol).add(date);
+    }
+    const day = days.get(date);
+    if (!day || entry.simulado || entry.tipo === 'opinion') continue;
+    day.played = true;
+    if (entry.tipo === 'entrar_parque' && !entry.ubicacion_restaurada) day.visits++;
+    if (entry.tipo === 'actividad_diaria') {
+      day.parkMs += entry.parque_ms;
+      day.meters += entry.metros;
+    }
+  }
+  return summary;
+}
+function careStreak(dates,today) {
+  if (!dates) return 0;
+  let date = dates.has(today) ? today : shiftDate(today,-1);
+  let streak = 0;
+  while (dates.has(date)) {
+    streak++;
+    date = shiftDate(date,-1);
+  }
+  return streak;
+}
+const chartDate = new Intl.DateTimeFormat('es-ES',{timeZone:'UTC',weekday:'short',day:'numeric'});
+const analyticsNumber = new Intl.NumberFormat('es-ES',{maximumFractionDigits:2});
+function renderActivityChart(days) {
+  const maximum = Math.max(60000,...[...days.values()].map(day=>day.parkMs));
+  const bars = [...days].map(([date,day])=>{
+    const label = chartDate.format(new Date(date+'T12:00:00Z'));
+    const minutes = day.parkMs / 60000;
+    const amount = minutes > 0 && minutes < .1 ? 'Menos de 0,1' : analyticsNumber.format(minutes);
+    return '<li><span class="bar-value">'+html(amount === 'Menos de 0,1' ? '<0,1' : amount)+'</span>'+
+      '<div class="bar-track" aria-hidden="true"><span style="height:'+(day.parkMs ? Math.max(2,day.parkMs/maximum*100) : 0)+'%"></span></div>'+
+      '<span class="bar-day" aria-label="'+html(label+', '+amount+' minutos')+'">'+html(label)+'</span></li>';
+  }).join('');
+  return '<figure class="entry activity-chart"><figcaption><strong>Minutos en el parque</strong></figcaption><ul>'+bars+'</ul></figure>';
+}
+function statTiles(rows,cssClass = 'stats') {
+  return '<div class="'+cssClass+'">'+rows.map(([label,value])=>'<article class="tile"><small>'+html(label)+'</small><strong>'+html(value)+'</strong></article>').join('')+'</div>';
+}
 function renderProfile(now) {
+  const analysis = getAnalytics(now);
+  const days = [...analysis.days.values()];
+  const summary = days.reduce((total,day)=>({
+    visits:total.visits+day.visits,parkMs:total.parkMs+day.parkMs,meters:total.meters+day.meters,
+    played:total.played+Number(day.played)
+  }),{visits:0,parkMs:0,meters:0,played:0});
   const points = pointsAt(now);
   const teams = Object.entries(TEAMS).map(([id,team]) => '<article class="tile"><strong>'+team+'</strong><small>'+
     number.format(state.points[id])+' pts acumulados</small><small>+'+number.format(points[id])+' pts hoy</small></article>').join('');
-  const stats = state.stats;
-  const impact = Math.floor(stats.spent/200);
-  const totals = state.daily.date === dayKey(now) ? state.daily : {timeSavia:0,discoverySavia:0};
-  const rows = [['Savia ganada',stats.earned],['Savia gastada',stats.spent],['Árboles descubiertos',Object.keys(state.discoveries).length],
-    ['Km andados',new Intl.NumberFormat('es-ES',{maximumFractionDigits:3}).format(stats.meters/1000)],
-    ['Tiempo en el parque',duration(stats.parkMs)],['Retos ganados',stats.wins],['Retos perdidos',stats.losses]];
-  drawPanel('profile','<h2>Perfil y estadísticas</h2><p class="hint">Tu equipo es Roble.</p><div class="teams">'+teams+
-    '</div><article class="entry"><h3>Has ayudado a plantar '+number.format(impact)+' '+(impact === 1 ? 'árbol' : 'árboles')+
-    '</h3><p class="hint">Forestry France · impacto simulado</p><progress max="200" value="'+stats.spent%200+
-    '" aria-label="Progreso de Savia hacia el siguiente árbol"></progress><small>'+stats.spent%200+' de 200 Savia gastada hacia el siguiente árbol</small></article>'+
-    '<div class="stats">'+rows.map(([label,value])=>'<article class="tile"><small>'+html(label)+'</small><strong>'+html(typeof value === 'number' ? number.format(value) : value)+'</strong></article>').join('')+
-    '</div><p class="ref-line">Hoy: '+totals.timeSavia+' / 12 Savia por tiempo y recompensa por '+totals.discoverySavia/DISCOVERY_REWARD+
-    ' / '+DISCOVERY_DAILY_LIMIT+' árboles descubiertos ('+totals.discoverySavia+' Savia de hasta 100). Los bonos por especie nueva se suman aparte. Día del juego: hora de Oxford. El tiempo cuenta mientras la página está visible.</p>'+
-    '<button type="button" class="secondary" data-action="export">Exportar datos (JSON)</button>');
+  const impact = Math.floor(analysis.spent/200);
+  const towardNext = analysis.spent%200;
+  const defenses = analysis.defenses ? number.format(Math.round(100*analysis.defended/analysis.defenses))+' % ('+
+    analysis.defended+'/'+analysis.defenses+')' : 'Sin defensas resueltas';
+  const owned = currentTrees(now).map(tree=>{
+    const days = vitality(state.trees[tree.id],now);
+    const risk = days <= 2 || tree.tier === 'remarcable' ? 'alto' : days <= 4 ? 'medio' : 'bajo';
+    const streak = careStreak(analysis.careDays.get(tree.id),analysis.today);
+    return '<article class="entry"><div class="row"><h4>'+html(tree.label)+'</h4><span class="risk '+risk+'">Riesgo '+risk+'</span></div>'+
+      '<p class="hint">'+streak+(streak === 1 ? ' día seguido de cuidados' : ' días seguidos de cuidados')+' · Vitalidad '+days+'/7</p>'+
+      '<progress max="7" value="'+days+'" aria-label="Vitalidad"></progress></article>';
+  }).join('');
+  const todayTotals = state.daily.date === analysis.today ? state.daily : {timeSavia:0,discoverySavia:0};
+  drawPanel('profile','<h2>Mis estadísticas</h2><p class="hint">Tu equipo es Roble.</p><div class="teams">'+teams+'</div>'+
+    '<h3>Resumen de la semana</h3><p class="hint">Últimos 7 días · hora de Oxford</p>'+
+    statTiles([['Días jugados',summary.played+' / 7'],['Visitas al parque',number.format(summary.visits)],
+      ['Tiempo total en el parque',duration(summary.parkMs)],['Km andados',analyticsNumber.format(summary.meters/1000)]])+
+    renderActivityChart(analysis.days)+
+    '<p class="ref-line">El tiempo y la distancia por día se registran desde esta actualización. Las visitas anteriores también se muestran.</p>'+
+    '<h3>Tus árboles</h3>'+(owned || '<p class="hint stat-section">Todavía no tienes árboles reclamados.</p>')+
+    '<h3>Retos</h3>'+statTiles([['Ganados',number.format(analysis.wins)],['Perdidos',number.format(analysis.losses)],['Defensas con éxito',defenses]])+
+    '<h3>Herbario</h3>'+statTiles([['Especies de la guía descubiertas',analysis.foundSpecies.size+' / '+SPECIES_GUIDE.length],
+      ['Cartas raras conseguidas',number.format(analysis.rare)],['Árboles descubiertos',number.format(analysis.treesFound)]])+
+    '<h3>Impacto</h3><article class="entry"><strong>Has ayudado a plantar '+number.format(impact)+' '+(impact === 1 ? 'árbol' : 'árboles')+
+    '</strong><p class="hint">Forestry France · impacto simulado</p><progress max="200" value="'+towardNext+
+    '" aria-label="Progreso de Savia hacia el siguiente árbol"></progress><small>Faltan '+(200-towardNext)+' Savia para el siguiente.</small></article>'+
+    statTiles([['Savia ganada',number.format(state.stats.earned)],['Savia gastada',number.format(analysis.spent)]])+
+    '<p class="ref-line">Hoy: '+todayTotals.timeSavia+' / 12 Savia por tiempo y recompensa por '+todayTotals.discoverySavia/DISCOVERY_REWARD+
+    ' / '+DISCOVERY_DAILY_LIMIT+' árboles descubiertos ('+todayTotals.discoverySavia+' Savia de hasta 100).</p>'+
+    '<div class="actions"><button type="button" class="secondary" data-action="tutorial">Volver a ver el tutorial</button>'+
+    '<button type="button" class="secondary" data-action="opinion">Enviar opinión</button>'+
+    '<button type="button" class="secondary" data-action="export">Exportar datos (JSON)</button></div>');
 }
 function render(now = Date.now()) {
   $('wallet').textContent = number.format(state.savia)+' Savia';
-  const alert = Object.entries(state.challenges).filter(([,challenge])=>challenge.direction === 'in')
-    .sort((a,b)=>a[1].ends-b[1].ends)[0];
+  const alert = nextIncoming(now);
   $('duel-banner').hidden = !alert;
   if (alert) {
     $('duel-status').textContent = challengeText(alert[1],now);
@@ -1236,6 +1469,8 @@ document.addEventListener('click',event => {
   if (action === 'close') { selected = null; render(); }
   else if (action === 'export') exportData();
   else if (action === 'discover') openPhoto(id);
+  else if (action === 'tutorial') openTutorial();
+  else if (action === 'opinion') { $('opinion-form').reset(); $('opinion-error').hidden = true; $('opinion-dialog').showModal(); }
   else if (action === 'show') {
     const tree = trees.get(id);
     if (!tree) return;
@@ -1253,6 +1488,53 @@ document.querySelector('nav').addEventListener('keydown',event => {
   showTab(buttons[destination].id.slice(4));
   buttons[destination].focus();
 });
+const TUTORIAL = [
+  ['Qué es Forestrix','Recorre University Parks para descubrir y cuidar árboles del mundo real. Usa el GPS o toca el mapa en el modo de prueba.'],
+  ['Descubrir y herbario','Acércate a un árbol y haz una foto para registrarlo. En el herbario puedes consultar tus especies y sus cartas.'],
+  ['Reclamar, cuidar y retar','Usa Savia para reclamar árboles libres o retar a un rival. Cuida tus árboles para recuperar vitalidad y defiéndelos cuando te reten.'],
+  ['Equipos, radar e impacto','Juegas con el equipo Roble y el radar te guía hacia los árboles despiertos. Cada 200 de Savia gastada suman un árbol plantado simulado.']
+];
+let tutorialStep = 0;
+function paintTutorial() {
+  const [title,copy] = TUTORIAL[tutorialStep];
+  $('tutorial-position').textContent = 'Tutorial · ' + (tutorialStep+1) + ' de ' + TUTORIAL.length;
+  $('tutorial-title').textContent = title;
+  $('tutorial-copy').textContent = copy;
+  $('tutorial-back').hidden = tutorialStep === 0;
+  $('tutorial-next').textContent = tutorialStep === TUTORIAL.length-1 ? 'Empezar' : 'Siguiente';
+}
+function openTutorial() {
+  tutorialStep = 0;
+  paintTutorial();
+  $('tutorial-dialog').showModal();
+  if (!state.tutorialSeen) { state.tutorialSeen = true; save(); }
+}
+$('tutorial-next').addEventListener('click',()=>{
+  if (tutorialStep === TUTORIAL.length-1) $('tutorial-dialog').close();
+  else { tutorialStep++; paintTutorial(); }
+});
+$('tutorial-back').addEventListener('click',()=>{
+  tutorialStep--;
+  paintTutorial();
+  if (!tutorialStep) $('tutorial-next').focus();
+});
+$('tutorial-close').addEventListener('click',()=>$('tutorial-dialog').close());
+$('cancel-opinion').addEventListener('click',()=>$('opinion-dialog').close());
+$('opinion-form').addEventListener('submit',submit=>{
+  submit.preventDefault();
+  const fields = new FormData(submit.currentTarget);
+  const liked = String(fields.get('liked') || '').trim();
+  const confusing = String(fields.get('confusing') || '').trim();
+  const tomorrow = fields.get('tomorrow');
+  if (!liked || !confusing || !['sí','quizás','no'].includes(tomorrow)) {
+    $('opinion-error').hidden = false;
+    return;
+  }
+  event('opinion',null,Date.now(),null,{gustado:liked,aburrido_o_confuso:confusing,volverias_manana:tomorrow});
+  save();
+  $('opinion-dialog').close();
+  notify('Tu opinión se ha guardado en este dispositivo.');
+});
 document.addEventListener('visibilitychange',() => {
   const now = Date.now();
   if (document.hidden) {
@@ -1266,6 +1548,7 @@ document.addEventListener('visibilitychange',() => {
     render(tick(now));
   }
 });
+migrateAnalytics(Date.now());
 initMap();
 if (state.cache?.data || SNAPSHOT) {
   installCatalog(state.cache?.data || SNAPSHOT);
@@ -1275,9 +1558,10 @@ tick();
 showTab('mapa');
 const previousTestPosition = state.testPosition;
 setMode(mode);
-if (mode === 'test' && previousTestPosition) setLocation(previousTestPosition.lat,previousTestPosition.lng);
+if (mode === 'test' && previousTestPosition) setLocation(previousTestPosition.lat,previousTestPosition.lng,null,true);
 loadTrees();
 setInterval(() => render(tick()),1000);
+if (!state.tutorialSeen) openTutorial();
 </script>
 </body>
 </html>
