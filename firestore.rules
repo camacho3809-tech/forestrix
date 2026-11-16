@@ -18,6 +18,77 @@ service cloud.firestore {
     function admin() {
       return signed() && exists(/databases/$(database)/documents/admins/$(uid())) && me().pseudo == 'admin-forestrix';
     }
+    // Season 1, Oxford GMT. Keep these boundaries and the reserved tree in sync with index.html.
+    function seasonStartMillis() { return 1796083200000; }
+    function seasonEndMillis() { return 1800921600000; }
+    function seasonExpired(acquired) { return acquired < seasonEndMillis() && millis() >= seasonEndMillis(); }
+    function weeklyTree() { return '13100408200'; }
+    function testPlayer(id) { return get(player(id)).data.pseudo.matches('test-.*'); }
+    function walletPath(id) { return /databases/$(database)/documents/players/$(id)/private/wallet; }
+    function auctionPath(id) { return /databases/$(database)/documents/auctions/$(id); }
+    function parkVisitPath(id,week) { return /databases/$(database)/documents/players/$(id)/visits/$(week); }
+    function validWallet(w) {
+      return w.keys().hasAll(['credit','spent','key','held']) && w.keys().hasOnly(['credit','spent','key','held'])
+        && w.credit is int && w.spent is int && w.held is int && w.key is string
+        && w.credit >= w.spent + w.held && w.spent >= 0 && w.held >= 0
+        && (w.held == 0 ? w.key == '' : w.key != '');
+    }
+    function lockBid(old,next) {
+      let a = getAfter(auctionPath(next.key)).data;
+      return old.held == 0 && next.held >= 30 && a.bidder == uid() && a.amount == next.held && millis() < a.close
+        && (!exists(auctionPath(next.key)) || get(auctionPath(next.key)).data.bidder != uid());
+    }
+    function unlockBid(old,next) {
+      let a = get(auctionPath(old.key)).data;
+      return old.held > 0 && next.held == 0 &&
+        ((a.bidder != uid() && a.amount > old.held && next.spent == old.spent)
+          || (a.bidder == uid() && a.amount == old.held && millis() >= a.close && next.spent == old.spent + old.held));
+    }
+    function walletChanges(old,next) {
+      return next.credit >= old.credit && next.spent >= old.spent &&
+        ((next.key == old.key && next.held == old.held) ||
+          (next.spent == old.spent && next.key != '' && lockBid(old,next)) ||
+          (next.key == '' && unlockBid(old,next)));
+    }
+    function visitWeek(week) {
+      return week is int && (week % 604800000 == 345600000 || week % 604800000 == 342000000)
+        && millis() >= week && millis() < week + 608400000;
+    }
+    function validBid(key,a) {
+      let isTest = key.matches('test-[0-9]+');
+      let w = getAfter(walletPath(uid())).data;
+      return a.keys().hasAll(['start','close','until','amount','bidder','clanId','visit'])
+        && a.keys().hasOnly(['start','close','until','amount','bidder','clanId','visit'])
+        && a.start is int && a.amount is int && a.amount >= 30 && a.visit is string
+        && a.bidder == uid() && a.clanId == me().clanId && millis() >= a.start && millis() < a.close
+        && (isTest
+          ? testPlayer(uid()) && a.start % 240000 == 0 && key == 'test-' + string(a.start)
+            && a.close == a.start + 120000 && a.until == a.start + 240000
+          : !testPlayer(uid()) && key == string(a.start) && a.visit == key && a.start % 604800000 == 345600000
+            && millis() >= seasonStartMillis() && a.close < seasonEndMillis()
+            && a.close == a.start + 172800000 && a.until == a.start + 604800000)
+        && visitWeek(get(parkVisitPath(uid(),a.visit)).data.week)
+        && validWallet(w) && w.key == key && w.held == a.amount
+        && (!exists(walletPath(uid())) || get(walletPath(uid())).data.held == 0);
+    }
+    match /auctions/{key} {
+      allow read: if signed();
+      allow create: if signed() && request.resource.data.amount == 30 && validBid(key,request.resource.data);
+      allow update: if signed() && resource.data.bidder != uid()
+        && request.resource.data.amount == resource.data.amount + 5
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['amount','bidder','clanId','visit'])
+        && validBid(key,request.resource.data);
+    }
+    match /referrals/{invitee} {
+      allow read: if signed() && (invitee == uid() || resource.data.inviter == uid());
+      allow create: if signed() && invitee == uid() && request.resource.data.invitee == uid()
+        && request.resource.data.keys().hasOnly(['inviter','invitee','at'])
+        && request.resource.data.inviter is string && request.resource.data.inviter != uid()
+        && testPlayer(uid()) == testPlayer(request.resource.data.inviter)
+        && get(player(request.resource.data.inviter)).data.pseudo != ''
+        && me().pseudo != '' && request.resource.data.at == request.time;
+    }
+
     function playerFields(p) {
       return p.keys().hasOnly(['pseudo','nivel','xp','clanId','puntosTemporada','updatedAt','slots','leftUntil'])
         && p.pseudo is string && p.pseudo.size() <= 24 && (p.clanId == null || p.clanId is string)
@@ -41,11 +112,26 @@ service cloud.firestore {
         && request.resource.data.clanId == null && request.resource.data.leftUntil == 0
         && request.resource.data.slots.size() == 0;
       allow update: if signed() && uid() == id && playerFields(request.resource.data)
+        && (resource.data.pseudo == '' || request.resource.data.pseudo == resource.data.pseudo)
         && resource.data.xp <= request.resource.data.xp && membershipChange(resource.data,request.resource.data);
       match /private/{file} {
         allow read: if signed() && uid() == id;
         allow create, update: if signed() && uid() == id && (file in ['save','membership'] || (file == 'receipts'
           && request.resource.data.items is list && request.resource.data.items.size() <= 40));
+        allow create: if signed() && uid() == id && file == 'wallet' && validWallet(request.resource.data) &&
+          (request.resource.data.held == 0 || lockBid({'held':0},request.resource.data));
+        allow update: if signed() && uid() == id && file == 'wallet' && validWallet(request.resource.data)
+          && walletChanges(resource.data,request.resource.data);
+      }
+      match /visits/{week} {
+        allow read: if signed() && uid() == id;
+        allow create: if signed() && uid() == id && request.resource.data.keys().hasOnly(['week','at'])
+          && week == string(request.resource.data.week) && visitWeek(request.resource.data.week) && request.resource.data.at == request.time;
+      }
+      match /testGrants/{grant} {
+        allow read, create: if signed() && uid() == id && testPlayer(uid())
+          && (request.method != 'create' || (request.resource.data.keys().hasOnly(['kind','at'])
+            && request.resource.data.kind in ['xp','savia'] && request.resource.data.at == request.time));
       }
     }
     match /admins/{id} {
@@ -56,13 +142,13 @@ service cloud.firestore {
       return t.keys().hasOnly(['ownerUid','ownerPseudo','clanId','tier','acquiredAt','protectedUntil','vitalityUntil','level','lastCareBy','lastCareAt','activeChallenge','ledger'])
         && t.ownerUid is string && t.ownerPseudo is string && (t.clanId == null || t.clanId is string)
         && t.tier in ['comun','notable','remarcable'] && t.level is int && t.level >= 1 && t.level <= 4
-        && t.acquiredAt is int && t.protectedUntil == t.acquiredAt + 3600000 && t.vitalityUntil is int && t.ledger is map;
+        && t.acquiredAt is int && (t.protectedUntil == t.acquiredAt + 3600000 || t.protectedUntil == t.acquiredAt) && t.vitalityUntil is int && t.ledger is map;
     }
     function freshClaim(id, next) {
       let p = getAfter(player(uid())).data;
       return next.ownerUid == uid() && next.ownerPseudo == p.pseudo && next.clanId == p.clanId
         && id in p.slots && p.slots.size() <= (p.nivel < 5 ? 3 : (p.nivel < 10 ? 4 : 5))
-        && nearNow(next.acquiredAt) && next.vitalityUntil == next.acquiredAt + 604800000
+        && nearNow(next.acquiredAt) && next.protectedUntil == next.acquiredAt + 3600000 && next.vitalityUntil == next.acquiredAt + 604800000
         && next.level == 1 && next.lastCareAt == null && next.lastCareBy == null && next.activeChallenge == null;
     }
     function opensDuel(id, old, next, change) {
@@ -84,8 +170,10 @@ service cloud.firestore {
     function changesTree(id, old, next) {
       let change = next.diff(old).affectedKeys();
       return
-        (old.activeChallenge == null && millis() >= old.vitalityUntil + 259200000
+        ((seasonExpired(old.acquiredAt) || old.activeChallenge == null && millis() >= old.vitalityUntil + 259200000)
           && next.tier == old.tier && freshClaim(id,next)) ||
+        (!seasonExpired(old.acquiredAt) && change.hasOnly(['protectedUntil']) &&
+          next.protectedUntil == old.acquiredAt && testPlayer(uid()) && testPlayer(old.ownerUid)) ||
         (guardedByMe(old.ownerUid) && change.hasOnly(['lastCareBy','lastCareAt','vitalityUntil','ledger'])
           && next.lastCareBy == uid() && nearNow(next.lastCareAt) && next.lastCareAt != old.lastCareAt
           && millis() < old.vitalityUntil + 259200000 && next.vitalityUntil == next.lastCareAt + 604800000) ||
@@ -97,20 +185,27 @@ service cloud.firestore {
     }
     match /trees/{id} {
       allow read: if signed();
-      allow create: if signed() && validTree(request.resource.data) && freshClaim(id,request.resource.data)
+      allow create: if signed() && id != weeklyTree() && validTree(request.resource.data) && freshClaim(id,request.resource.data)
         && request.resource.data.ledger.size() == 0;
-      allow update: if signed() && validTree(request.resource.data) && changesTree(id,resource.data,request.resource.data);
+      allow update: if signed() && id != weeklyTree() && validTree(request.resource.data) && changesTree(id,resource.data,request.resource.data);
     }
     match /challenges/{id} {
       allow read: if signed();
       allow create: if signed() && newDuel(id,request.resource.data);
-      allow update: if signed() && resolveState(id,resource.data,request.resource.data);
+      allow update: if signed() && (resolveState(id,resource.data,request.resource.data) ||
+        (resource.data.status == 'open' && millis() < resource.data.expiresAt
+          && uid() in [resource.data.attackerUid,resource.data.defenderUid]
+          && testPlayer(resource.data.attackerUid) && testPlayer(resource.data.defenderUid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['expiresAt'])
+          && request.resource.data.expiresAt < resource.data.expiresAt
+          && request.resource.data.expiresAt >= millis() + 45000 && request.resource.data.expiresAt <= millis() + 75000));
     }
     function newDuel(id,d) {
       let t = get(tree(d.treeId)).data;
       let other = get(player(d.defenderUid)).data;
       let p = getAfter(player(uid())).data;
       return d.keys().hasOnly(['treeId','attackerUid','defenderUid','price','createdAt','expiresAt','status'])
+        && d.treeId != weeklyTree() && !seasonExpired(t.acquiredAt)
         && d.status == 'open' && d.attackerUid == uid() && uid() != d.defenderUid && t.ownerUid == d.defenderUid
         && d.price is int && d.price >= 10 && nearNow(d.createdAt) && d.expiresAt == d.createdAt + 900000
         && t.protectedUntil <= millis() && millis() < t.vitalityUntil + 259200000
@@ -121,7 +216,7 @@ service cloud.firestore {
     function resolveState(id,old,next) {
       let change = next.diff(old).affectedKeys();
       let after = getAfter(tree(old.treeId)).data;
-      return old.status == 'open' && next.resolvedAt == request.time
+      return old.status == 'open' && !seasonExpired(old.createdAt) && next.resolvedAt == request.time
         && get(tree(old.treeId)).data.activeChallenge == id && after.activeChallenge == null &&
         ((next.status == 'defended' && millis() < old.expiresAt && change.hasOnly(['status','resolvedAt','defendedBy'])
           && next.defendedBy == uid() && guardedByMe(old.defenderUid) && after.ownerUid == old.defenderUid) ||

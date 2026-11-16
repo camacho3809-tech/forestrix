@@ -381,6 +381,11 @@
   .clan-reactions{display:flex;gap:4px;flex-wrap:wrap}.clan-reactions button{padding:3px 6px}
   @keyframes clan-duel{50%{opacity:.3}}
   @media(prefers-reduced-motion:reduce){.tree-glyph.contested .tree-art{animation:none;filter:drop-shadow(0 0 3px #ffaf48)}}
+  #weekend-banner{position:absolute;z-index:910;margin:0;left:50%;transform:translateX(-50%);top:calc(190px + env(safe-area-inset-top));width:min(350px,calc(100% - 24px));font-size:12px;text-align:center;padding:5px 9px;pointer-events:none}
+  #expedition-dialog{max-width:390px}
+  #expedition-dialog li{margin-bottom:3px}
+  #progress-notice{pointer-events:auto;cursor:pointer}
+  .tree-glyph.week-tree .tree-art{filter:drop-shadow(0 0 6px #eac846) drop-shadow(0 0 2px #fff1a3)}
 </style>
 </head>
 <body>
@@ -476,7 +481,7 @@
       <details id="technical-details" class="entry">
         <summary><span data-es="Datos técnicos">Données techniques</span></summary>
         <p id="map-status" class="muted"><span data-es="Buscando árboles en OpenStreetMap…">Recherche des arbres dans OpenStreetMap…</span></p>
-        <p id="cloud-technical" class="hint"></p><button id="all-events" class="secondary" type="button" data-action="all-events" hidden data-es="Exportar todos los eventos">Exporter tous les événements</button>
+        <p id="cloud-technical" class="hint"></p><div id="test-tools" class="actions" hidden></div><button id="all-events" class="secondary" type="button" data-action="all-events" hidden data-es="Exportar todos los eventos">Exporter tous les événements</button>
         <p id="tile-warning" class="hint" hidden></p>
         <button id="reload-trees" class="secondary" type="button" hidden><span data-es="Reintentar carga">Réessayer</span></button>
       </details>
@@ -490,6 +495,8 @@
     <button id="tab-perfil" role="tab" aria-controls="panel-perfil" aria-selected="false" type="button"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-profile"></use></svg><span><span data-es="Perfil">Profil</span></span></button>
   </nav>
 </div>
+<aside id="weekend-banner" class="entry" role="status" hidden></aside>
+<dialog id="expedition-dialog" aria-label="Forestrix"></dialog>
 <div id="cloud-banner" class="entry" role="status" hidden></div>
 <div id="notice" role="status" hidden></div>
 <div id="progress-notice" role="status" aria-live="polite" hidden><strong id="progress-notice-title"></strong><span id="progress-notice-text"></span></div>
@@ -547,6 +554,7 @@
   <h2 id="welcome-title" data-es="Crea tu perfil">Crée ton profil</h2>
   <p><b>Ta forêt, ton territoire</b></p>
   <label for="profile-nickname" data-es="Apodo">Pseudo</label>
+  <p id="welcome-invitation"></p>
   <input id="profile-nickname" name="nickname" required maxlength="24" autocomplete="nickname" autofocus>
   <p class="welcome-mission" data-es="Descubre y reclama tu primer árbol">Découvre et revendique ton premier arbre</p>
   <p>+50 Savia · Fondateur</p>
@@ -783,9 +791,9 @@ const shownCards = new Set();
 const activeEffects = new Map();
 const recentClaims = new Map();
 function paintWallet() {
-  if (walletTarget === state.savia && $('wallet-amount').textContent === number.format(walletAmount)+' Savia') return;
-  if (walletTarget === state.savia && walletFrame) return;
-  const target = state.savia;
+  const target = spendableSavia();
+  if (walletTarget === target && $('wallet-amount').textContent === number.format(walletAmount)+' Savia') return;
+  if (walletTarget === target && walletFrame) return;
   const starting = walletAmount;
   const oldTarget = walletTarget;
   walletTarget = target;
@@ -901,6 +909,7 @@ function playResult(outcome) {
   lastFxTimer = setTimeout(()=>{screen.hidden = true;},2000);
 }
 function cueGameFeedback(entry) {
+  gameEffect(entry);
   if (entry.tipo === 'resultado_reto') {
     queueMicrotask(()=>playResult(entry.resultado));
     return;
@@ -1042,12 +1051,12 @@ function spend(amount) { state.savia -= amount; state.stats.spent += amount; }
 function vitality(record, now) { return record?.owner ? Math.max(0,Math.ceil((record.until-now)/DAY)) : 0; }
 function status(id,now) {
   const record=state.trees[id];
-  if (!record?.owner || now>=record.until+3*DAY) return 'libre';
+  if (!record?.owner || seasonExpired(record.acquiredAt,now) || (id===WEEK_TREE && now>=record.until) || now>=record.until+3*DAY) return 'libre';
   if (ownsTree(record)) return vitality(record,now) ? 'mio' : 'seco';
   return sameClan(record) ? 'clan' : 'rival';
 }
 function ownedCount(now) {
-  return Object.values(state.trees).filter(record=>ownsTree(record) && now<record.until+3*DAY).length;
+  return Object.entries(state.trees).filter(([id,record])=>id!==WEEK_TREE && ownsTree(record) && status(id,now)!=='libre').length;
 }
 function reservedCount() { return Object.values(state.challenges).filter(challenge=>challenge.direction==='out').length; }
 function daily(date) {
@@ -1163,17 +1172,18 @@ function distanceTo(tree) { return locationFix ? meters(locationFix,tree) : Infi
 function duelPrice(tree,now) { return TIERS[tree.tier].price + 5*vitality(state.trees[tree.id],now); }
 function restriction(action,tree,now) {
   const id=tree.id, record=state.trees[id], condition=status(id,now);
+  if (id===WEEK_TREE && action!=='discover') return say('Réservé aux enchères.','Reservado para la subasta.');
   if (distanceTo(tree)>=20) return say('Approche-toi à moins de 20 m.','Acércate a menos de 20 m.');
   if (action==='discover') return state.discoveries[id] ? say('Cet arbre est déjà dans ton herbier.','Este árbol ya está en tu herbario.') : '';
   if (!onlineWorld.ready) return offlineText();
   if (action==='claim') {
     if (condition!=='libre' || state.challenges[id]) return say('L’arbre doit être libre.','El árbol debe estar libre.');
-    if (state.savia<TIERS[tree.tier].price) return say('Tu n’as pas assez de Savia.','Te falta Savia.');
+    if (spendableSavia()<TIERS[tree.tier].price) return say('Tu n’as pas assez de Savia.','Te falta Savia.');
   }
   if (action==='challenge') {
     if (!record?.owner || ownsTree(record) || sameClan(record) || condition==='libre' || state.challenges[id]) return say('Ce défi est indisponible.','Este reto no está disponible.');
     if (record.protectedUntil>now) return say('Cet arbre est encore protégé.','Este árbol aún está protegido.');
-    if (state.savia<duelPrice(tree,now)) return say('Tu n’as pas assez de Savia.','Te falta Savia.');
+    if (spendableSavia()<duelPrice(tree,now)) return say('Tu n’as pas assez de Savia.','Te falta Savia.');
   }
   if (['claim','challenge'].includes(action) && ownedCount(now)+reservedCount()>=treeLimit()) return say('Tu n’as plus de place libre.','Ya no te quedan plazas libres.');
   if (['care','defend','level'].includes(action)) {
@@ -1200,11 +1210,12 @@ function act(action,id,identification = null,photo = null) {
     }
     const totals = daily(dayKey(now));
     const newSpecies = !!tree.species && !state.species[tree.cardKey];
-    const reward = totals.discoverySavia < DISCOVERY_REWARD*DISCOVERY_DAILY_LIMIT ? DISCOVERY_REWARD : 0;
+    const baseReward = totals.discoverySavia < DISCOVERY_REWARD*DISCOVERY_DAILY_LIMIT ? DISCOVERY_REWARD : 0;
     state.discoveries[id] = {fecha:new Date(now).toISOString(),tree};
     if (photo) void keepPhoto(id,photo);
     if (newSpecies) state.species[tree.cardKey] = tree.species;
-    totals.discoverySavia += reward;
+    totals.discoverySavia += baseReward;
+    const reward=baseReward*(eventOn(now,'découvertes doublées')?2:1);
     gain(reward + (newSpecies ? 20 : 0));
     const variant = giveCard(tree,null,now,'descubrir');
     event('descubrir',id,now,coords(),{savia:reward+(newSpecies?20:0),carta:variant,especie:tree.species || null,identificada_por_ti:tree.identifiedByPlayer});
@@ -1475,7 +1486,7 @@ function treeIcon(tree,condition,shines) {
   const awake = shines ? '<i class="wake-aura"></i>' : '';
   const spark = tier === 'remarcable' ? '<i class="tree-spark a">✦</i><i class="tree-spark b">✧</i>' : '';
   const claimed = recentClaims.has(tree.id) ? ' tree-claimed' : '';
-  const contested=state.challenges[tree.id]?.direction==='in' ? ' contested' : '';
+  const contested=(state.challenges[tree.id]?.direction==='in' ? ' contested' : '')+(tree.id===WEEK_TREE?' week-tree':'');
   return L.divIcon({className:'tree-icon',html:'<span aria-hidden="true" class="tree-glyph '+tier+contested+
     '" style="--crown:'+colors[condition]+';--team:'+colors[condition]+';--phase:-'+phase+'s;--period:'+period+'s">'+halo+awake+
     '<svg class="tree-art'+claimed+'" viewBox="0 0 50 50"><use href="#game-tree"></use></svg>'+spark+'</span>',
@@ -1581,6 +1592,7 @@ function treeActions(tree,now,includePhoto = false) {
   const record = state.trees[id];
   const condition = status(id,now);
   const buttons = [], hints = [];
+  if (id===WEEK_TREE) return includePhoto ? (state.discoveries[id]?'':actionButton('discover',id,say('Prendre une photo','Hacer foto'),restriction('discover',tree,now)))+renderAuction(now) : '';
   function add(action,label) {
     const reason = restriction(action,tree,now);
     buttons.push(actionButton(action,id,label,reason));
@@ -1662,6 +1674,7 @@ function renderMap(now) {
   if (!tree && dossier.open) dossier.close();
   if (!tree) return;
   const scroll = $('dossier-scroll')?.scrollTop || 0;
+  lastSelectedTree=tree.id;
   drawPanel('tree-detail',treeDossier(tree,now));
   $('dossier-scroll').scrollTop=scroll;
   if (!dossier.open) dossier.showModal();
@@ -1686,7 +1699,7 @@ function renderHerbarium() {
   const cards = Object.entries(state.cards).flatMap(([key,stack]) => Object.entries(stack.variants).map(([variant,count]) =>
     '<article class="tile field-card '+(variant === 'normal' ? '' : 'rare')+'" data-illustrated-card="'+html(JSON.stringify([key,variant]))+'">'+
     uiIcon('wood','ui-icon card-emblem')+'<strong>'+html(SPECIES_BY_KEY.get(key)?.[0] || (/^arbol:/.test(key) ? say('Arbre non identifié',say("Arbre non identifié","Árbol sin identificar"))+' · '+key.slice(6) : stack.label))+'</strong><small>' +
-    html(VARIANTS[variant])+' · ×'+count+'</small>'+(variant === 'especial' ? '' :
+    html(VARIANTS[variant])+' · ×'+count+'</small>'+(variant!=='normal'?utilityButton('exp-share-card',say('Partager','Compartir'),key+'|'+variant):'')+(variant === 'especial' ? '' :
     '<small>'+cardCount(key)+say(" disponibles pour améliorer</small>"," disponibles para subir nivel</small>"))+'</article>')).join('');
   drawPanel('herbarium',say("<h2>Herbier</h2><p class=\"hint\">","<h2>Herbario</h2><p class=\"hint\">")+Object.keys(state.species).length+say(" espèces identifiées · "," especies identificadas · ")+Object.keys(state.discoveries).length+
     say(" arbres découverts</p><div class=\"entries\">"," árboles descubiertos</p><div class=\"entries\">")+(entries || say("<p>Photographie un arbre à proximité pour l’ajouter à ton herbier.</p>","<p>Haz una foto junto a un árbol para añadirlo a tu herbario.</p>"))+
@@ -1864,7 +1877,8 @@ function renderProfile(now) {
   const played=playedDays(shiftDate(dayKey(now),-6),now).size;
   const allDays=playedDays('0000-01-01',now).size;
   const {level,progress,target}=levelFor();
-  const treeImpact=Math.floor((onlineWorld.clanPoints?.get(myClan()) || 0)/100);
+  const hasClan=Boolean(myClan());
+  const treeImpact=hasClan?Math.floor((onlineWorld.clanPoints?.get(myClan()) || 0)/100):Math.floor(state.stats.spent/200);
   const streak=streakNow(now);
   const badges=badgeDefinitions.map(([id,fr,es,icon,frGoal,esGoal])=>{
     const earned=state.progression.badges.includes(id);
@@ -1878,13 +1892,13 @@ function renderProfile(now) {
     (level===20 ? number.format(state.progression.xp)+' XP · '+say('Niveau maximal','Nivel máximo') :
       number.format(progress)+' / '+number.format(target)+' XP')+'</span></div>'+
     '<progress max="'+target+'" value="'+(level===20 ? target : progress)+'" aria-label="XP"></progress>'+
-    '<p class="profile-streak">🔥 '+streak+' · '+say('Série quotidienne','Racha diaria')+'</p></div>';
+    '<p class="profile-streak">🔥 '+streak+' · '+say('Série quotidienne','Racha diaria')+'</p>'+seasonHeader(now)+'<div class="actions">'+utilityButton('exp-invite',say('Inviter','Invitar'))+utilityButton('exp-sound',soundEnabled?say('Couper les sons','Silenciar sonidos'):say('Activer les sons','Activar sonidos'))+'</div></div>';
   const numbers=statTiles([[say('arbres gardés','árboles custodiados'),ownedCount(now)],
     [say('espèces','especies'),Object.keys(state.species).length],[say('jours joués','días jugados'),allDays]],'profile-numbers');
-  const impact='<section class="entry profile-impact"><h3>'+say('Impact du clan','Impacto del clan')+
-    '</h3><p><strong>'+say('Ton clan a gagné ','Tu clan ha conseguido ')+treeImpact+
-    (treeImpact===1 ? say(' arbre à planter cette saison',' árbol para plantar esta temporada') :
-      say(' arbres à planter cette saison',' árboles para plantar esta temporada'))+'</strong></p><small>'+
+  const impact='<section class="entry profile-impact"><h3>'+(hasClan?say('Impact du clan','Impacto del clan'):say('Ton impact','Tu impacto'))+
+    '</h3><p><strong>'+(hasClan?say('Ton clan a gagné ','Tu clan ha conseguido '):say('Tu as aidé à planter ','Has ayudado a plantar '))+treeImpact+
+    (hasClan?(treeImpact===1 ? say(' arbre à planter cette saison',' árbol para plantar esta temporada') :
+      say(' arbres à planter cette saison',' árboles para plantar esta temporada')):treeImpact===1?say(' arbre',' árbol'):say(' arbres',' árboles'))+'</strong></p><small>'+
     say('Simulation · les plantations réelles arriveront avec nos partenaires','Simulación · las plantaciones reales llegarán con nuestros colaboradores')+
     '</small></section><section class="entry locked-rewards"><p>🔒 '+say('Récompenses près de chez toi · bientôt','Recompensas cerca de ti · próximamente')+'</p></section>';
   const defenses=analysis.defenses ? Math.round(100*analysis.defended/analysis.defenses)+' % ('+analysis.defended+'/'+analysis.defenses+')' :
@@ -1903,6 +1917,8 @@ function renderProfile(now) {
 function render(now = Date.now()) {
   paintWallet();
   paintCloud();
+  paintTechnical();
+  updateWeekend(now);
   const streak=streakNow(now);
   $('header-streak-count').textContent=number.format(streak);
   $('header-streak').setAttribute('aria-label',say('Série quotidienne : ','Racha diaria: ')+streak);
@@ -1917,6 +1933,7 @@ function render(now = Date.now()) {
   else if (activeTab === 'arboles') renderMyTrees(now);
   else if (activeTab === 'misiones') renderMissions(now);
   else renderProfile(now);
+  renderBriefings(now);
 }
 function showTab(tab) {
   activeTab = tab;
@@ -2020,6 +2037,7 @@ document.addEventListener('click',event => {
   if (button.matches('nav button')) { showTab(button.id.slice(4)); return; }
   const {action,id} = button.dataset;
   if (action === 'close') { selected = null; render(); }
+  else if (action.startsWith('exp-')) void handleExpedition(action,id);
   else if (action === 'export') exportData();
   else if (action === 'language') {
     try { localStorage.setItem('forestrix.lang',say('es','fr')); location.reload(); } catch {}
@@ -2159,7 +2177,7 @@ function treeDossier(tree,now) {
       '<p>'+say('Aucun événement pour cet arbre.','Aún no hay eventos para este árbol.')+'</p>')+'</section></div>'+
     '<footer class="dossier-actions"><p>'+say('Il faut être à moins de 20 m.','Tienes que estar a menos de 20 m.')+
     (Number.isFinite(distance) ? ' · '+number.format(Math.floor(distance*10)/10)+' m' : '')+'</p>'+
-    treeActions(tree,now,true)+'</footer>';
+    treeActions(tree,now,true)+(state.discoveries[tree.id]?utilityButton('exp-share-tree',say('Partager','Compartir'),tree.id):'')+'</footer>';
 }
 const photoUrls=new Map(), photoReads=new Set();
 let photoDbPromise;
@@ -2224,6 +2242,7 @@ async function keepPhoto(id,file) {
 function registerProfile(nickname,now) {
   if (state.profile || !nickname) return;
   state.profile={nickname,createdAt:now};
+  if (incomingRef || incomingCode) state.invitation={ref:incomingRef,code:incomingCode};
   event('perfil_creado',null,now,null);
   redeemMissions(now,true);
   awardBadges(now);
@@ -2299,7 +2318,6 @@ function renderMissions(now) {
       'Un día de juego cuenta tras una acción o un minuto en el parque. Las misiones siguen la hora de Oxford.')+'</p>');
 }
 let rankView='players';
-const seasonStart='2026-11-16';
 const badgeXP=25;
 const actionXP={descubrir:10,reclamar:15,cuidar:5,defender:20,despierto_encontrado:30};
 const streakActions=new Set(['descubrir','reclamar','cuidar','defender']);
@@ -2319,7 +2337,9 @@ const badgeDefinitions=[
   ['pillar','Pilier du clan','Pilar del clan','🏅','Entre dans le top 3 de ton clan cette semaine.','Entra en el top 3 semanal de tu clan.'],
   ['season-one','Saison 1','Temporada 1','🍂','Joue pendant la première saison.','Juega durante la primera temporada.'],
   ['clan-founder','Fondateur de clan','Fundador de clan','⚑','Crée un clan.','Crea un clan.'],
-  ['clan-spirit',"Esprit d’équipe",'Espíritu de equipo','🤝','Atteins un objectif de clan.','Completa un objetivo de clan.']
+  ['clan-spirit',"Esprit d’équipe",'Espíritu de equipo','🤝','Atteins un objectif de clan.','Completa un objetivo de clan.'],
+  ['weekly-tree','Arbre de la semaine','Árbol de la semana','✦','Remporte une enchère.','Gana una subasta.'],
+  ['recruiter','Recruteur','Reclutador','👋','Invite 3 joueurs qui atteignent le niveau 2.','Invita a 3 jugadores que lleguen al nivel 2.']
 ];
 function levelFor(xp=state.progression.xp) {
   let level=1, used=0;
@@ -2357,11 +2377,15 @@ function showProgressNotice() {
   $('progress-notice-text').textContent=entry.message;
   node.classList.toggle('card-reveal',entry.card);
   node.hidden=false;
-  progressionTimer=setTimeout(()=>{
+  const finish=()=>{
+    clearTimeout(progressionTimer);
+    node.onclick=null;
     node.hidden=true;
     progressionTimer=0;
     showProgressNotice();
-  },entry.card ? 2800 : 1900);
+  };
+  node.onclick=finish;
+  progressionTimer=setTimeout(finish,entry.card?1350:1150);
 }
 function awardXP(amount,now) {
   if (amount<=0) return;
@@ -2435,8 +2459,9 @@ function awardBadges(now) {
     events.some(entry=>entry.tipo==='reclamar' && (entry.categoria || trees.get(entry.id_arbol)?.tier || state.trees[entry.id_arbol]?.tree?.tier)==='remarcable'),
     state.progression.parkMeters>=5000,
     clanWeeklyRank(now),
-    playedDays(seasonStart,now).size>0,
-    count('clan_creado')>0,count('objetivo_clan_cumplido')>0
+    playedDays(seasonStart,Math.min(now,seasonCutoff-1)).size>0,
+    count('clan_creado')>0,count('objetivo_clan_cumplido')>0,count('subasta_ganada')>0,
+    (onlineWorld.recruits || []).filter(id=>(onlineWorld.players.get(id)?.nivel || 0)>=2 && !isTestPseudo(onlineWorld.players.get(id)?.pseudo)).length>=3
   ];
   for (let i=0;i<badgeDefinitions.length;i++) {
     const [id,fr,es]=badgeDefinitions[i];
@@ -2499,11 +2524,11 @@ function rankRows(items,own,limit) {
   const row=(value,index)=>'<li'+(value.id===own?' class="rank-mine"':'')+'><span><b>'+(index+1)+'.</b> '+html(value.name)+'</span><b>'+number.format(value.points)+' pts</b></li>';
   return '<ol class="rank-list">'+ranked.slice(0,limit).map(row).join('')+(mine>=limit?row(ranked[mine],mine):'')+'</ol>';
 }
-function renderRanking() {
+function renderRanking(now=Date.now()) {
   const players=rankView==='players';
-  const items=players ? [...onlineWorld.players].filter(([,p])=>p.pseudo).map(([id,p])=>({id,name:p.pseudo,points:onlineWorld.playerPoints?.get(id) || p.puntosTemporada || 0})) :
+  const items=players ? rankedPlayers() :
     [...onlineWorld.clans].map(([id,c])=>({id,name:c.emblem+' '+c.name,points:onlineWorld.clanPoints?.get(id) || 0}));
-  return '<section class="entry"><h3>'+say('Classement','Clasificación')+'</h3><div class="actions">'+
+  return '<section class="entry"><h3>'+say('Classement','Clasificación')+'</h3>'+seasonHeader(now)+'<div class="actions">'+
     '<button type="button" class="secondary" data-action="rank-players" aria-pressed="'+players+'">'+say('Joueurs','Jugadores')+'</button>'+
     '<button type="button" class="secondary" data-action="rank-clans" aria-pressed="'+!players+'">Clans</button></div>'+
     (items.length ? rankRows(items,players?onlineWorld.uid:myClan(),players?20:10) : '<p class="hint">'+say('Aucun classement disponible.','Clasificación no disponible.')+'</p>')+'</section>';
@@ -2512,7 +2537,7 @@ function clanButton(action,label,id='') {
   return '<button type="button" class="secondary" data-action="clan-'+action+'" data-id="'+html(id)+'"'+(!onlineWorld.ready?' disabled':'')+'>'+label+'</button>';
 }
 function renderClan(now) {
-  const heading='<section class="entry"><h3>Clan</h3>';
+  const heading='<section class="entry"><h3>Clan</h3>'+utilityButton('exp-invite',say('Inviter','Invitar'))+referralPrompt();
   const clan=onlineWorld.clans.get(myClan());
   if (!clan && levelFor().level<5) {
     return heading+'<p>'+say('Les clans se débloquent au niveau 5','Los clanes se desbloquean en el nivel 5')+'</p><progress value="'+Math.min(500,state.progression.xp)+'" max="500" aria-label="XP"></progress><small>'+Math.min(500,state.progression.xp)+' / 500 XP</small></section>';
@@ -2594,6 +2619,233 @@ async function handleClan(action,button) {
   });
   if (action==='clan-react') return clanTask(()=>onlineWorld.react(...button.dataset.id.split(':')));
   if (action==='all-events' && onlineWorld.admin && state.profile?.nickname==='admin-forestrix') return clanTask(()=>onlineWorld.exportEvents());
+}
+
+let lastSelectedTree=null;
+const SEASON = Object.freeze({number:1,start:'2026-12-01',weeks:8});
+const seasonStart=SEASON.start;
+const seasonEnd=shiftDate(seasonStart,SEASON.weeks*7);
+const seasonCutoff=Date.parse(seasonEnd+'T00:00:00Z'); // La saison 1 se déroule entièrement à l’heure GMT.
+const WEEK_TREE='13100408200';
+const PARK_NAME='University Parks';
+const WEEKEND_EVENTS=[
+  {inicio:'2026-12-12T00:00:00Z',fin:'2026-12-14T00:00:00Z',parque:PARK_NAME,tipo:'points doubles'}
+];
+const isTestPseudo=pseudo=>typeof pseudo==='string' && pseudo.startsWith('test-');
+const isTestPlayer=()=>isTestPseudo(state.profile?.nickname);
+const queryParams=new URLSearchParams(location.search);
+const incomingRef=/^[a-zA-Z0-9_-]{1,128}$/.test(queryParams.get('ref') || '') ? queryParams.get('ref') : '';
+const incomingCode=/^[A-Z]{6}$/.test(queryParams.get('join') || '') ? queryParams.get('join') : '';
+const expeditionDialog=$('expedition-dialog');
+let soundEnabled=false, audio;
+try { soundEnabled=localStorage.getItem('forestrix.sound')==='on'; } catch {}
+function gameEffect(entry) {
+  const notes={reclamar:380,defender:460,subir_nivel_jugador:520,insignia:620,despierto_encontrado:700};
+  const frequency=notes[entry.tipo];
+  if (!frequency || entry.simulado) return;
+  if (typeof navigator.vibrate==='function') navigator.vibrate(35);
+  if (!soundEnabled || audio?.state!=='running') return;
+  const tone=audio.createOscillator(), volume=audio.createGain(), now=audio.currentTime;
+  tone.type='sine'; tone.frequency.setValueAtTime(frequency,now);
+  tone.frequency.exponentialRampToValueAtTime(frequency*1.24,now+.16);
+  volume.gain.setValueAtTime(.001,now);
+  volume.gain.exponentialRampToValueAtTime(.09,now+.035);
+  volume.gain.exponentialRampToValueAtTime(.001,now+.24);
+  tone.connect(volume); volume.connect(audio.destination);
+  tone.start(now); tone.stop(now+.25);
+}
+function prepareAudio() {
+  if (!soundEnabled) return;
+  try {
+    const Audio=window.AudioContext || window.webkitAudioContext;
+    if (!Audio) return;
+    audio ||= new Audio();
+    if (audio.state==='suspended') void audio.resume().catch(()=>{});
+  } catch {}
+}
+document.addEventListener('pointerdown',prepareAudio);
+function seasonExpired(acquiredAt,now) { return acquiredAt<seasonCutoff && now>=seasonCutoff; }
+function seasonHeader(now) {
+  const today=dayKey(now);
+  const remaining=Math.max(0,Math.round((Date.parse(seasonEnd)-Date.parse(today))/DAY));
+  const elapsed=Math.max(0,Math.min(SEASON.weeks*7,SEASON.weeks*7-remaining));
+  const title=say('Saison ','Temporada ')+SEASON.number+' · '+(today<seasonStart?say('Dès le ','Desde el ')+localDate.format(Date.parse(seasonStart+'T12:00:00Z')) :
+    remaining?say('J-','D-')+remaining:say('Terminée','Terminada'));
+  return '<p><strong>'+title+'</strong></p><progress max="'+SEASON.weeks*7+'" value="'+elapsed+'" aria-label="'+say('Progression de la saison','Progreso de la temporada')+'"></progress>';
+}
+function eventOn(now,type) {
+  return WEEKEND_EVENTS.find(item=>item.parque===PARK_NAME && (!type || item.tipo===type) && Date.parse(item.inicio)<=now && now<Date.parse(item.fin));
+}
+function weekendLabel(item) {
+  const label=item.tipo==='points doubles' ? say('points doubles','puntos dobles') : say('découvertes doublées','descubrimientos dobles');
+  return say('Ce week-end : ','Este fin de semana: ')+label+say(' à ',' en ')+item.parque;
+}
+function updateWeekend(now) {
+  const item=eventOn(now);
+  const banner=$('weekend-banner');
+  banner.hidden=!item || activeTab!=='mapa';
+  banner.textContent=item ? weekendLabel(item) : '';
+  if (!item || !state.profile || state.eventos.some(entry=>entry.tipo==='evento_activo' && entry.inicio===item.inicio && entry.evento===item.tipo)) return;
+  event('evento_activo',null,now,null,{inicio:item.inicio,fin:item.fin,parque:item.parque,evento:item.tipo});
+  save();
+}
+const rankedPlayers=()=>{
+  const rows=[...onlineWorld.players].filter(([,p])=>p.pseudo&&!isTestPseudo(p.pseudo)).map(([id,p])=>({id,name:p.pseudo,points:onlineWorld.playerPoints?.get(id)||0}));
+  return rows.sort((a,b)=>b.points-a.points || a.name.localeCompare(b.name,locale) || a.id.localeCompare(b.id));
+};
+function currentRank() {
+  const index=rankedPlayers().findIndex(p=>p.id===onlineWorld.uid);
+  return index<0 ? null : index+1;
+}
+function openExpedition(markup) {
+  expeditionDialog.innerHTML=markup;
+  expeditionDialog.showModal();
+}
+function renderBriefings(now) {
+  if (!onlineWorld.ready || !state.profile || document.querySelector('dialog[open]') || !onlineWorld.rankingReady) return;
+  const date=dayKey(now), yesterday=shiftDate(date,-1);
+  if (now>=seasonCutoff && !state.seasonRecap && (state.profile.createdAt<seasonCutoff || onlineWorld.playerPoints?.get(onlineWorld.uid))) {
+    state.seasonRecap=true;
+    const rank=currentRank(), winner=[...(onlineWorld.clanPoints || [])].filter(([id])=>onlineWorld.clans.has(id)).sort((a,b)=>b[1]-a[1] || a[0].localeCompare(b[0]))[0];
+    const leaders=(onlineWorld.bestTrees || []).slice(0,3).map(([id,points])=>'<li>'+html(trees.has(id)?treeTitle(trees.get(id)):id)+' · '+points+' pts</li>').join('');
+    openExpedition('<h2>'+say('Bilan de la Saison 1','Balance de la Temporada 1')+'</h2><p>'+
+      html(rank ? '#'+rank : say('Non classé','Sin clasificación'))+' · '+Object.keys(state.species).length+' '+say('espèces découvertes','especies descubiertas')+
+      '</p><p>'+say('Insigne','Insignia')+' · '+(state.progression.badges.includes('season-one')?say('Saison 1','Temporada 1'):'—')+
+      '</p><p>'+say('Clan vainqueur','Clan ganador')+' · '+html(winner?onlineWorld.clans.get(winner[0]).name:'—')+
+      '</p><h3>'+say('Tes meilleurs arbres','Tus mejores árboles')+'</h3>'+(leaders?'<ol>'+leaders+'</ol>':'<p>—</p>')+
+      utilityButton('exp-close',say('Continuer','Continuar')));
+    save(); return;
+  }
+  if (state.briefing?.date===date) return;
+  const rank=currentRank(), before=state.briefing?.rank;
+  const delta=rank && before ? before-rank : 0;
+  const drying=currentTrees(now).filter(tree=>vitality(state.trees[tree.id],now)<=2);
+  const incoming=(onlineWorld.duels || []).filter(d=>d.defenderUid===onlineWorld.uid && dayKey(d.createdAt)===yesterday);
+  const clan=onlineWorld.clans.get(myClan());
+  const weekProgress=clan?.weekKey===weekOf(date)?clan.weekProgress:0;
+  const results=incoming.map(d=>'<li>'+html(trees.has(d.treeId)?treeTitle(trees.get(d.treeId)):d.treeId)+' · '+({open:say('En cours','En curso'),won:say('Perdu','Perdido'),defended:say('Défendu','Defendido')})[d.status]+'</li>').join('');
+  openExpedition('<h2>'+say('Hier dans ta forêt','Ayer en tu bosque')+'</h2><p><b>'+number.format(onlineWorld.yesterdayPoints || 0)+' pts</b> · '+say('tes arbres hier','tus árboles ayer')+
+    '</p><p>'+say('Arbres à soigner','Árboles que necesitan cuidado')+' · '+(drying.length?html(drying.map(treeTitle).join(', ')):'—')+
+    '</p><p>'+say('Défis reçus','Retos recibidos')+' · '+incoming.length+'</p>'+(results?'<ul>'+results+'</ul>':'')+
+    '<p>'+say('Classement','Clasificación')+' · '+(rank?'#'+rank+(delta?' · '+(delta>0?'↑ ':'↓ ')+Math.abs(delta):before?' · =':''):'—')+
+    '</p><p>'+say('Objectif du clan','Objetivo del clan')+' · '+(clan?weekProgress+' / '+clan.weekGoal:'—')+
+    '</p>'+utilityButton('exp-close',say('Allons au parc','Vamos al parque')));
+  state.briefing={date,rank};
+  event('resumen_diario_visto',null,now,null,{fecha_oxford:date,position:rank});
+  save();
+}
+function utilityButton(action,label,id='',disabled=false) {
+  return '<button type="button" class="secondary" data-action="'+action+'" data-id="'+html(id)+'"'+(disabled?' disabled':'')+'>'+html(label)+'</button>';
+}
+function auctionKey(now,test=isTestPlayer()) {
+  if (test) return 'test-'+Math.floor(now/240000)*240000;
+  const week=weekOf(dayKey(now));
+  return String(nextMidnight(Date.parse(shiftDate(week,-1)+'T12:00:00Z')));
+}
+function auctionWindow(key) {
+  const test=key.startsWith('test-');
+  const start=Number(test?key.slice(5):key);
+  return {start,close:start+(test?120000:2*DAY),until:start+(test?240000:7*DAY)};
+}
+function currentAuction(now) { return onlineWorld.auctions?.get(auctionKey(now)); }
+function renderAuction(now) {
+  const key=auctionKey(now), a=currentAuction(now), {close,until}=auctionWindow(key);
+  const active=now<close && (isTestPlayer() || dayKey(now)>=seasonStart && close<seasonCutoff);
+  const bid=(a?.amount || 25)+5;
+  const eligibility=onlineWorld.parkEligible || inside;
+  const canBid=onlineWorld.ready && onlineWorld.expeditionReady && active && eligibility && a?.bidder!==onlineWorld.uid && spendableSavia()>=bid;
+  return '<section><h3>✦ '+say('Arbre de la semaine','Árbol de la semana')+'</h3><p>'+say('Enchère · 24 points par jour pour le gardien','Subasta · 24 puntos al día para el guardián')+
+    '</p><p>'+(active?say('Fin : ','Cierra: ')+duration(Math.max(0,close-now)):a?(isTestPlayer()?say('Gardien jusqu’à la fin du test','Guardián hasta el fin de la prueba'):say('Gardien jusqu’au lundi suivant','Guardián hasta el lunes siguiente')):(isTestPlayer()?say('Prochaine enchère test bientôt','Próxima subasta de prueba en breve'):say('Enchères du lundi au mercredi','Pujas de lunes a miércoles')))+
+    ' · '+(a?html(onlineWorld.players.get(a.bidder)?.pseudo || '—')+' · '+a.amount+' Savia':'—')+'</p>'+
+    (!eligibility && active?'<p>'+say('Passe dans le parc cette semaine pour enchérir.','Pasa por el parque esta semana para pujar.')+'</p>':'')+
+    (active?utilityButton('exp-bid',say('Enchérir · ','Pujar · ')+bid+' Savia',key,!canBid):'')+'</section>';
+}
+function paintTechnical() {
+  const on=isTestPlayer();
+  $('test-tools').hidden=!on;
+  if (on) drawPanel('test-tools',(!onlineWorld.expeditionReady?'<p class="hint">'+say('Publie les nouvelles règles Firestore pour activer ces outils.','Publica las nuevas reglas de Firestore para activar estas herramientas.')+'</p>':'')+utilityButton('exp-test-xp','+500 XP','',!onlineWorld.expeditionReady || !onlineWorld.ready)+
+    utilityButton('exp-test-savia','+100 Savia','',!onlineWorld.expeditionReady || !onlineWorld.ready)+
+    utilityButton('exp-test-protection',say('Lever la protection','Quitar protección'),'',!onlineWorld.expeditionReady || !onlineWorld.ready || !(selected || lastSelectedTree))+
+    utilityButton('exp-test-duel',say('Défi : 1 minute','Reto: 1 minuto'),'',!onlineWorld.expeditionReady || !onlineWorld.ready)+
+    utilityButton('exp-test-auction',say('Enchère test (2 min)','Subasta de prueba (2 min)')));
+  const inviter=onlineWorld.players.get(incomingRef)?.pseudo;
+  if (!state.profile && (inviter || incomingCode)) $('welcome-invitation').textContent=inviter?
+    inviter+say(' t’invite à Forestrix',' te invita a Forestrix'):say('Tu as été invité à Forestrix','Te han invitado a Forestrix');
+}
+function referralPrompt() {
+  const code=state.invitation?.code || incomingCode;
+  return code && levelFor().level>=5 && !myClan() && !state.invitation?.joined ?
+    '<p>'+say('Un clan t’a invité.','Un clan te ha invitado.')+' '+utilityButton('exp-join',say('Rejoindre le clan invité','Unirse al clan de la invitación'))+'</p>' : '';
+}
+async function shareInvite() {
+  const url=new URL('https://camacho3809-tech.github.io/forestrix/');
+  if(myClan() && onlineWorld.code) url.searchParams.set('join',onlineWorld.code);
+  if (onlineWorld.uid) url.searchParams.set('ref',onlineWorld.uid);
+  if (navigator.share) await navigator.share({title:'Forestrix',url:url.href});
+  else if (navigator.clipboard) {
+    await navigator.clipboard.writeText(url.href);
+    notify(say('Lien copié.','Enlace copiado.'));
+  } else window.prompt(say('Copie ton lien','Copia tu enlace'),url.href);
+  event('invitacion_enviada',null,Date.now(),null,{clanId:myClan()}); save();
+}
+async function shareHerbarium(type,id) {
+  const variant=type==='exp-share-card'?id.split('|')[1]:'normal';
+  const key=type==='exp-share-card'?id.split('|')[0]:'';
+  const tree=type==='exp-share-tree'?state.discoveries[id]?.tree:Object.values(state.discoveries).find(item=>item.tree.cardKey===key)?.tree;
+  if (!tree && !state.cards[key]) return;
+  const title=tree?treeTitle(tree):state.cards[key].label;
+  const species=tree?.species || state.species[key] || say('Espèce inconnue','Especie desconocida');
+  const canvas=document.createElement('canvas'); canvas.width=1080;canvas.height=1350;
+  const ctx=canvas.getContext('2d');
+  if (!ctx) return;
+  const sky=ctx.createLinearGradient(0,0,1080,1350);
+  sky.addColorStop(0,'#153d32');sky.addColorStop(1,'#637452');ctx.fillStyle=sky;ctx.fillRect(0,0,1080,1350);
+  ctx.strokeStyle='#eed88c';ctx.lineWidth=4;ctx.strokeRect(45,45,990,1260);
+  ctx.textAlign='center';ctx.fillStyle='#fff3ce';
+  ctx.font='bold 62px Georgia';ctx.fillText('Forestrix',540,160,910);
+  ctx.font='29px system-ui';ctx.fillText(PARK_NAME.toUpperCase(),540,224,890);
+  const palettes={flor:'#e9a8b6',otono:'#d48055',dorada:'#e8c86b',especial:'#c0b3f4',normal:'#9dc58c'};
+  ctx.fillStyle=palettes[variant] || palettes.normal;ctx.beginPath();ctx.arc(540,591,285,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#203f32';ctx.fillRect(507,581,66,222);
+  for (const [x,y,r] of [[540,500,124],[438,613,113],[652,609,120],[540,645,117]]) {
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+  }
+  ctx.fillStyle='#fff3ce';ctx.font='bold 66px Georgia';ctx.fillText(title,540,1007,885);
+  ctx.font='italic 40px Georgia';ctx.fillText(species,540,1076,885);
+  ctx.font='28px system-ui';ctx.fillText((state.profile?.nickname || '—')+' · '+(VARIANTS[variant] || VARIANTS.normal),540,1190,885);
+  const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+  if (!blob) return;
+  const file=new File([blob],'forestrix-herbier.png',{type:'image/png'});
+  if (navigator.canShare?.({files:[file]}) && navigator.share) await navigator.share({files:[file],title:'Forestrix'});
+  else {
+    const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=file.name;
+    document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(link.href),15000);
+  }
+  event('compartir',tree?.id || null,Date.now(),null,{variante:variant}); save();
+}
+function spendableSavia() { return Math.max(0,Math.min(state.savia,onlineWorld.availableSavia ?? state.savia)); }
+async function handleExpedition(action,id) {
+  try {
+    if (action==='exp-close') { expeditionDialog.close();showTab('mapa');return; }
+    if (action==='exp-sound') {
+      soundEnabled=!soundEnabled;
+      localStorage.setItem('forestrix.sound',soundEnabled?'on':'off');
+      if (soundEnabled) prepareAudio();
+      render();return;
+    }
+    if (action==='exp-invite') { await shareInvite();return; }
+    if (['exp-share-tree','exp-share-card'].includes(action)) { await shareHerbarium(action,id);return; }
+    if (action==='exp-join') { await onlineWorld.joinClan({code:state.invitation?.code || incomingCode});state.invitation={...state.invitation,joined:true};save();render();return; }
+    if (action==='exp-bid') { await onlineWorld.placeBid(id);return; }
+    if (!isTestPlayer()) return;
+    if (action==='exp-test-auction') {
+      if (!trees.has(WEEK_TREE)) return;
+      selected=WEEK_TREE;showTab('mapa');frameTree(trees.get(WEEK_TREE),17);return;
+    }
+    await onlineWorld.testAction(action,selected || lastSelectedTree);
+  } catch(error) {
+    if (error.name!=='AbortError') notify(cloudError(error));
+  }
 }
 
 $('map-bottom').addEventListener('cancel',event=>{
@@ -2683,14 +2935,14 @@ async function startFirebase() {
   let checkedWallet=false;
   let stopClan=()=>{}, stopCode=()=>{}, watchedClan=null, lastProfile='', lastBackup='';
   const uploaded=new Map();
-  const backupFields=['savia','stats','profile','progression','discoveries','species','cards','awake','daily','tutorialSeen','gameMs','analyticsVersion','cloudApplied'];
+  const backupFields=['savia','stats','profile','progression','discoveries','species','cards','awake','daily','tutorialSeen','gameMs','analyticsVersion','cloudApplied','briefing','seasonRecap','invitation'];
   const fail=code=>{throw new Error(code);};
   const tx=work=>runTransaction(db,work);
   const data=snapshot=>snapshot.exists() ? snapshot.data() : null;
   const roster=members=>Object.keys(members).sort((a,b)=>members[a]-members[b] || a.localeCompare(b));
   const clean=object=>JSON.parse(JSON.stringify(object));
   const clanOf=(id)=>onlineWorld.players.get(id)?.clanId || null;
-  const isFree=(tree,now)=>!tree?.ownerUid || now>=tree.vitalityUntil+3*DAY;
+  const isFree=(tree,now)=>!tree?.ownerUid || seasonExpired(tree.acquiredAt,now) || now>=tree.vitalityUntil+3*DAY;
   const eventId=()=>doc(events).id;
   const cloudEvent=(t,id,type,treeId,meta,position=null)=>{
     t.set(doc(events,id),{tipo:type,uid,fecha:new Date().toISOString(),id_arbol:treeId,posicion:position,...meta});
@@ -2729,6 +2981,216 @@ async function startFirebase() {
     state.cloudApplied ||= {};
     save();
   }
+  const auctionCollection=collection(db,'auctions'), referrals=collection(db,'referrals');
+  const walletRef=doc(player,'private','wallet');
+  const testGrantCollection=collection(player,'testGrants');
+  const visitRef=key=>doc(player,'visits',key);
+  let wallet=null, touchedWeek='', expeditionBusy=false, referred=false;
+  const auctions=new Map();
+  onlineWorld.auctions=auctions;
+
+  function cloudCredit() { return state.savia+state.stats.spent; }
+  function walletWithCredit(current) {
+    return current ? {...current,credit:Math.max(current.credit,cloudCredit())} :
+      {credit:cloudCredit(),spent:state.stats.spent,key:'',held:0};
+  }
+  function available(current) { return Math.max(0,current.credit-current.spent-current.held); }
+  function reflectWallet(value) {
+    if (!value) return;
+    wallet=value;
+    onlineWorld.availableSavia=available(walletWithCredit(wallet));
+  }
+  function applyAuctionOutcome(receipt) {
+    const date=Date.now();
+    const id='auction:'+receipt.key;
+    if (state.cloudApplied[id]) return;
+    state.cloudApplied[id]=true;
+    spend(receipt.amount);
+    event('subasta_ganada',WEEK_TREE,date,null,{subasta:receipt.key,savia_gastada:receipt.amount,prueba:receipt.key.startsWith('test-')});
+    awardBadges(date);
+    progressNotice(say('Arbre de la semaine gagné','Has ganado el árbol de la semana'),receipt.amount+' Savia');
+    save();
+  }
+  async function refreshWallet() {
+    if (wallet && wallet.credit>=cloudCredit()) {
+      const bid=wallet.key && auctions.get(wallet.key);
+      if (!wallet.held || !bid || bid.bidder===uid && Date.now()<bid.close) return;
+    }
+    const result=await tx(async t=>{
+      const current=data(await t.get(walletRef));
+      const next=walletWithCredit(current);
+      let refund=false, win=null;
+      if (next.key) {
+        const a=data(await t.get(doc(auctionCollection,next.key)));
+        if (a && a.bidder!==uid && a.amount>next.held) { next.key='';next.held=0;refund=true; }
+        else if (a && a.bidder===uid && Date.now()>=a.close) {
+          win={key:next.key,amount:next.held};
+          next.spent+=next.held;next.key='';next.held=0;
+          const previous=data(await t.get(privateReceipts));
+          writeReceipt(t,previous,receiptFor('subasta_ganada','auction:'+win.key,WEEK_TREE,Date.now(),null,{auctionKey:win.key,price:win.amount}));
+        }
+      }
+      if (JSON.stringify(current)!==JSON.stringify(next)) t.set(walletRef,next);
+      return {next,refund,win};
+    });
+    reflectWallet(result.next);
+    if (result.refund) notify(say('On t’a dépassé sur l’arbre de la semaine','Te han superado en la subasta del árbol de la semana'));
+    if (result.win) applyAuctionOutcome(result.win);
+  }
+  async function syncVisit(now) {
+    const key=auctionKey(now,false);
+    if (touchedWeek===key) return;
+    if (!inside) {
+      const visit=await getDocFromServer(visitRef(key));
+      touchedWeek=visit.exists()?key:'';
+      onlineWorld.parkEligible=visit.exists();
+      return;
+    }
+    await tx(async t=>{
+      const ref=visitRef(key);
+      if (!(await t.get(ref)).exists()) t.set(ref,{at:serverTimestamp(),week:Number(key)});
+    });
+    touchedWeek=key;
+    onlineWorld.parkEligible=true;
+  }
+  async function syncReferral() {
+    const invitation=state.invitation;
+    if (referred || !invitation?.ref || invitation.ref===uid) return;
+    await tx(async t=>{
+      const ref=doc(referrals,uid);
+      const snapshot=await t.get(ref);
+      if (snapshot.exists()) return;
+      const p=data(await t.get(player));
+      const host=data(await t.get(doc(players,invitation.ref)));
+      if (!p?.pseudo || !host?.pseudo || isTestPseudo(p.pseudo)!==isTestPseudo(host.pseudo)) return;
+      t.set(ref,{inviter:invitation.ref,invitee:uid,at:serverTimestamp()});
+    });
+    const result=await getDocFromServer(doc(referrals,uid));
+    if (result.exists()) {
+      referred=true;
+      if (!state.eventos.some(entry=>entry.tipo==='invitacion_aceptada')) {
+        event('invitacion_aceptada',null,Date.now(),null,{invitador:result.data().inviter});
+        save();
+      }
+    }
+  }
+  async function placeBid(key) {
+    if (!onlineWorld.ready || !onlineWorld.expeditionReady || actionBusy) return;
+    actionBusy=true;
+    try {
+      await flush();
+      await syncVisit(Date.now());
+      await refreshWallet();
+      const id=eventId();
+      const result=await tx(async t=>{
+        const now=Date.now();
+        if (key!==auctionKey(now)) fail('ended');
+        const {start,close,until}=auctionWindow(key);
+        if (now>=close || !isTestPlayer() && (dayKey(now)<seasonStart || close>=seasonCutoff)) fail('ended');
+        const ref=doc(auctionCollection,key);
+        const [old,current,p,visit,previous]=await Promise.all([
+          t.get(ref),t.get(walletRef),t.get(player),t.get(visitRef(auctionKey(now,false))),t.get(privateReceipts)
+        ]).then(items=>items.map(data));
+        if (!visit) fail('visit');
+        const amount=(old?.amount || 25)+5;
+        const next=walletWithCredit(current);
+        if (old?.bidder===uid || next.held) fail('auction-held');
+        if (available(next)<amount) fail('funds');
+        next.key=key;next.held=amount;
+        t.set(ref,{start,close,until,amount,bidder:uid,clanId:p.clanId,visit:auctionKey(now,false)});
+        t.set(walletRef,next);
+        const receipt=receiptFor('puja',id,WEEK_TREE,now,null,{auctionKey:key,amount});
+        writeReceipt(t,previous,receipt);
+        return {next,receipt};
+      });
+      reflectWallet(result.next);
+      applyReceipt(result.receipt);
+      notify(say('Enchère enregistrée.','Puja registrada.'));
+    } finally { actionBusy=false;render(); }
+  }
+  function auctionGuardian(now) {
+    const key=auctionKey(now);
+    const a=auctions.get(key);
+    if (!a || now<a.close || now>=a.until || !key.startsWith('test-') && now>=seasonCutoff) return null;
+    return {owner:a.bidder,ownerPseudo:onlineWorld.players.get(a.bidder)?.pseudo,until:a.until,level:1,acquiredAt:a.close,protectedUntil:a.until,lastCare:'',tree:trees.get(WEEK_TREE)};
+  }
+  async function expeditionPulse(now) {
+    if (expeditionBusy || !state.profile) return;
+    expeditionBusy=true;
+    try {
+      const key=auctionKey(now,false);
+      if (touchedWeek!==key && (inside || !checkedVisit || checkedVisit!==key)) {
+        await syncVisit(now); checkedVisit=key;
+      }
+      await refreshWallet();
+      if (state.invitation?.ref && !referred) await syncReferral();
+    } catch (error) { console.warn('Forestrix expedition',error.code || error.message); }
+    finally { expeditionBusy=false; }
+  }
+  let checkedVisit='';
+  async function testAction(action,id) {
+    if (!isTestPlayer() || !onlineWorld.ready || !onlineWorld.expeditionReady) return;
+    await flush();
+    if (action==='exp-test-xp' || action==='exp-test-savia') {
+      const ref=doc(testGrantCollection);
+      const kind=action==='exp-test-xp'?'xp':'savia';
+      await tx(async t=>{
+        const p=data(await t.get(player));
+        if (!isTestPseudo(p?.pseudo)) fail('locked');
+        t.set(ref,{kind,at:serverTimestamp()});
+      });
+      return;
+    }
+    if (action==='exp-test-protection') {
+      if (!id || id===WEEK_TREE) fail('occupied');
+      await tx(async t=>{
+        const ref=treeRef(id), tree=data(await t.get(ref));
+        if (!tree) fail('occupied');
+        t.update(ref,{protectedUntil:tree.acquiredAt});
+      });
+      return;
+    }
+    if (action==='exp-test-duel') {
+      const found=[...duelData].find(([,d])=>d.status==='open' && [d.attackerUid,d.defenderUid].includes(uid));
+      if (!found) fail('ended');
+      await tx(async t=>{
+        const ref=duelRef(found[0]), duel=data(await t.get(ref));
+        const expiresAt=Date.now()+60000;
+        if (duel?.status!=='open' || expiresAt>=duel.expiresAt) fail('ended');
+        t.update(ref,{expiresAt});
+      });
+    }
+  }
+  function observeExpedition() {
+    watch('auction',auctionCollection,items=>{
+      auctions.clear();
+      for (const [id,a] of items) auctions.set(id,a);
+      totals();
+    });
+    onSnapshot(walletRef,snapshot=>{reflectWallet(data(snapshot));render();},()=>{});
+    onSnapshot(query(referrals,where('inviter','==',uid)),snapshot=>{
+      onlineWorld.recruits=snapshot.docs.map(doc=>doc.data().invitee);
+      awardBadges(Date.now());render();
+    },()=>{});
+  }
+  let observingGrants=false;
+  function observeTestGrants() {
+    if (observingGrants || !isTestPseudo(onlineWorld.players.get(uid)?.pseudo)) return;
+    observingGrants=true;
+    onSnapshot(testGrantCollection,snapshot=>{
+      if (!isTestPlayer()) return;
+      for (const grant of snapshot.docs) {
+        const token='test:'+grant.id;
+        if (!grant.data().at || state.cloudApplied[token]) continue;
+        state.cloudApplied[token]=true;
+        if (grant.data().kind==='xp') awardXP(500,Date.now());
+        else gain(100);
+        save();
+      }
+      render();
+    },error=>{observingGrants=false;console.warn('Forestrix test grants',error.code);});
+  }
+
   await loadAccount();
   onlineWorld.state='connecting';
 
@@ -2781,20 +3243,24 @@ async function startFirebase() {
       owner:t.ownerUid,ownerPseudo:t.ownerPseudo,until:t.vitalityUntil,level:t.level,acquiredAt:t.acquiredAt,
       protectedUntil:t.protectedUntil,lastCare:t.lastCareAt ? dayKey(t.lastCareAt) : '',tree:trees.get(id)
     }]));
+    delete state.trees[WEEK_TREE];
+    const guardian=auctionGuardian(now);
+    if (guardian) state.trees[WEEK_TREE]=guardian;
     state.challenges={};
     for (const [id,c] of duelData) {
-      if (c.status!=='open') continue;
+      if (c.status!=='open' || seasonExpired(c.createdAt,now)) continue;
       const direction=c.attackerUid===uid ? 'out' : c.defenderUid===uid || sameClan(state.trees[c.treeId]) ? 'in' : 'other';
       const rivalId=direction==='out'?c.defenderUid:c.attackerUid;
       state.challenges[c.treeId]={id,direction,rival:onlineWorld.players.get(rivalId)?.pseudo || '—',ends:c.expiresAt};
     }
   }
   function applyReceipt(receipt) {
+    if (receipt.type==='subasta_ganada') return applyAuctionOutcome({key:receipt.auctionKey,amount:receipt.price});
     if (state.cloudApplied[receipt.id]) return;
     const {type,id,treeId,time,price,position,clanId}=receipt;
     state.cloudApplied[id]=true;
     const tree=trees.get(treeId);
-    const meta={clanId:clanId || null};
+    const meta=type==='puja'?{subasta:receipt.auctionKey,savia:receipt.amount,prueba:receipt.auctionKey.startsWith('test-')}:{clanId:clanId || null};
     if (price) { spend(price); meta.savia_gastada=price; }
     if (type==='reclamar') meta.categoria=receipt.tier;
     if (type==='cuidar') {
@@ -2845,10 +3311,12 @@ async function startFirebase() {
     stopCode=onSnapshot(doc(clanRef(id),'private','code'),snapshot=>{onlineWorld.code=data(snapshot)?.code || '';render();},()=>{});
   }
   function refresh() {
+    onlineWorld.expeditionReady ||= Boolean(status.get('auction'));
     const ready=navigator.onLine!==false && ['players','trees','duels','clans','goals','receipts'].every(id=>status.get(id));
     if (ready && !onlineWorld.ready) scoreOnDay='';
     onlineWorld.ready=ready;
     if (status.get('trees')) activeTrees(Date.now());
+    onlineWorld.rankingReady=Boolean(status.get('auction'));
     if (ready) {
       if (!checkedWallet) {
         checkedWallet=true;
@@ -2856,6 +3324,7 @@ async function startFirebase() {
       }
       for (const receipt of receipts) applyReceipt(receipt);
       collectResults(Date.now());
+      if (onlineWorld.expeditionReady) observeTestGrants();
       observeClan();
       sync();
       pulse(Date.now());
@@ -2879,22 +3348,39 @@ async function startFirebase() {
     let day=dayKey(tree.acquiredAt);
     if (day<seasonStart) day=seasonStart;
     if (last && last>=day) day=shiftDate(last,1);
-    const lastLiving=dayKey(tree.vitalityUntil);
+    const lastLiving=dayKey(Math.min(tree.vitalityUntil,seasonCutoff-1));
     while (day<=through && day<=lastLiving) {
       const end=nextMidnight(Date.parse(day+'T12:00:00Z'))-1;
-      if (end<tree.vitalityUntil) ledger[day]={uid:tree.ownerUid,clanId:tree.clanId || null,points:TIERS[tree.tier].points*tree.level};
+      if (end<tree.vitalityUntil) ledger[day]={uid:tree.ownerUid,clanId:tree.clanId || null,points:TIERS[tree.tier].points*tree.level*(eventOn(end,'points doubles')?2:1)};
       day=shiftDate(day,1);
     }
     return ledger;
   }
   function totals() {
-    const players=new Map(), weekPoints=new Map(), clanPoints=new Map(), week=weekNow();
-    for (const tree of treeData.values()) for (const [day,score] of Object.entries(tree.ledger || {})) {
+    const players=new Map(), weekPoints=new Map(), clanPoints=new Map(), best=new Map(), week=weekNow();
+    const yesterday=shiftDate(dayKey(Date.now()),-1);
+    let yesterdayPoints=0;
+    const addPoints=(id,day,score)=>{
+      if (day<seasonStart || day>=seasonEnd) return;
       players.set(score.uid,(players.get(score.uid)||0)+score.points);
+      if (score.uid===uid) {
+        if (day===yesterday) yesterdayPoints+=score.points;
+        best.set(id,(best.get(id)||0)+score.points);
+      }
       if (day>=week && score.clanId===clanOf(score.uid)) weekPoints.set(score.uid,(weekPoints.get(score.uid)||0)+score.points);
-      if (score.clanId) clanPoints.set(score.clanId,(clanPoints.get(score.clanId)||0)+score.points);
+      if (score.clanId && !isTestPseudo(onlineWorld.players.get(score.uid)?.pseudo)) clanPoints.set(score.clanId,(clanPoints.get(score.clanId)||0)+score.points);
+    };
+    for (const [id,tree] of treeData) if (id!==WEEK_TREE) {
+      for (const [day,score] of Object.entries(settled(tree,yesterday))) addPoints(id,day,score);
     }
-    Object.assign(onlineWorld,{playerPoints:players,weekPoints,clanPoints});
+    for (const [key,a] of auctions) if (!key.startsWith('test-')) {
+      const last=Math.min(a.until,seasonCutoff);
+      for(let at=a.close;at<last && at+DAY<=Date.now();at+=DAY){
+        const day=dayKey(at);
+        addPoints(WEEK_TREE,day,{uid:a.bidder,clanId:a.clanId,points:24*(eventOn(at,'points doubles')?2:1)});
+      }
+    }
+    Object.assign(onlineWorld,{playerPoints:players,weekPoints,clanPoints,yesterdayPoints,bestTrees:[...best].sort((a,b)=>b[1]-a[1])});
   }
   async function score(now) {
     if (scoring) return;
@@ -2924,7 +3410,7 @@ async function startFirebase() {
     resolving=true;
     try {
       for (const [id,entry] of duelData) {
-        if (entry.status!=='open' || entry.expiresAt>now) continue;
+        if (entry.status!=='open' || entry.expiresAt>now || seasonExpired(entry.createdAt,now)) continue;
         const log=eventId();
         await tx(async t=>{
           const ref=duelRef(id), c=data(await t.get(ref));
@@ -2947,8 +3433,11 @@ async function startFirebase() {
     if (!onlineWorld.ready || now<nextPulse) return;
     nextPulse=now+3500;
     void resolve(now);
+    if (onlineWorld.expeditionReady) void expeditionPulse(now);
+    activeTrees(now);
     if (scoreOnDay!==dayKey(now)) {
       scoreOnDay=dayKey(now);
+      totals();
       void score(now);
     }
     sync();
@@ -2968,7 +3457,7 @@ async function startFirebase() {
     const slots=await Promise.all(p.slots.map(async id=>{
       const tree=data(await t.get(treeRef(id)));
       if (!isFree(tree,now) && tree.ownerUid===uid) return id;
-      if (!tree?.activeChallenge) return null;
+      if (!tree?.activeChallenge || seasonExpired(tree.acquiredAt,now)) return null;
       const duel=data(await t.get(duelRef(tree.activeChallenge)));
       return duel?.status==='open' && duel.attackerUid===uid ? id : null;
     }));
@@ -2977,7 +3466,7 @@ async function startFirebase() {
     return [...used,treeId];
   }
   async function doAction(action,tree) {
-    if (actionBusy || !onlineWorld.ready) return;
+    if (actionBusy || !onlineWorld.ready || tree.id===WEEK_TREE) return;
     actionBusy=true;
     const id=eventId(), resolution=eventId(), challenge=doc(duels), position=coords();
     try {
@@ -2994,11 +3483,19 @@ async function startFirebase() {
         const ledger=current ? settled(current,shiftDate(dayKey(now),-1)) : {};
         let price=0, patch={};
         if (action==='claim' || action==='challenge') {
-          if (current?.activeChallenge || (action==='claim' ? !free : free || current.ownerUid===uid || same)) fail('occupied');
+          if (current?.activeChallenge && !seasonExpired(current.acquiredAt,now) || (action==='claim' ? !free : free || current.ownerUid===uid || same)) fail('occupied');
           if (action==='challenge' && current.protectedUntil>now) fail('protected');
           price=TIERS[tier].price+(action==='challenge' ? 5*Math.max(0,Math.ceil((current.vitalityUntil-now)/DAY)) : 0);
-          if (price>state.savia) fail('funds');
+          if (state.savia<price) fail('funds');
+          const expeditionReady=onlineWorld.expeditionReady;
+          const currentWallet=expeditionReady?data(await t.get(walletRef)):null;
           patch.slots=await reserve(t,p,tree.id,now);
+          if (expeditionReady) {
+            const nextWallet=walletWithCredit(currentWallet);
+            if (available(nextWallet)<price) fail('funds');
+            nextWallet.spent+=price;
+            t.set(walletRef,nextWallet);
+          }
           if (action==='claim') {
             t.set(ref,{ownerUid:uid,ownerPseudo:p.pseudo,clanId:p.clanId,tier,acquiredAt:now,protectedUntil:now+CLAIM_PROTECTION,
               vitalityUntil:now+7*DAY,level:1,lastCareBy:null,lastCareAt:null,activeChallenge:null,ledger});
@@ -3168,10 +3665,11 @@ async function startFirebase() {
     document.body.append(link);link.click();link.remove();
     setTimeout(()=>URL.revokeObjectURL(url),30000);
   }
-  Object.assign(onlineWorld,{action:doAction,pulse,sync,createClan,joinClan,leaveClan,react,exportEvents});
+  Object.assign(onlineWorld,{action:doAction,pulse,sync,createClan,joinClan,leaveClan,react,exportEvents,placeBid,testAction});
+  observeExpedition();
   watch('players',players,items=>{onlineWorld.players=items;totals();});
   watch('trees',sharedTrees,items=>{treeData=items;totals();});
-  watch('duels',duels,items=>{duelData=items;});
+  watch('duels',duels,items=>{duelData=items;onlineWorld.duels=[...items.values()];});
   watch('clans',clans,items=>{onlineWorld.clans=new Map([...items].filter(([,c])=>!c.archived));});
   watch('goals',query(goals,where('eligible','array-contains',uid)),items=>{goalData=[...items].map(([id,item])=>({id,...item}));});
   onSnapshot(privateReceipts,{includeMetadataChanges:true},snapshot=>{
