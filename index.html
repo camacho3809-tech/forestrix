@@ -1,0 +1,1082 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#17382b">
+<title>Forestrix · University Parks</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+<style>
+  :root{color-scheme:light;--pine:#17382b;--green:#235e43;--ink:#162b21;--muted:#496354;--paper:#f6f8f1;--line:#dce5d8;--white:#fff;--free:#59615e;--mine:#227847;--rival:#ad332e;--dry:#855331;--gold:#ffdf91}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.4 system-ui,-apple-system,sans-serif}
+  button{font:inherit;cursor:pointer}
+  button:focus-visible,a:focus-visible{outline:3px solid #0e73a0;outline-offset:2px}
+  button:disabled{cursor:default;opacity:.68}
+  button.primary,button.secondary{min-height:44px;border-radius:10px;padding:8px 13px;font-weight:700}
+  button.primary{background:var(--green);color:#fff;border:1px solid var(--green)}
+  button.secondary{color:var(--pine);background:#fff;border:1px solid #b9cbbd}
+  h1,h2,h3,p{margin:0}
+  h1{font-size:23px;line-height:1.15;letter-spacing:-.045em}
+  h2{font-size:23px;letter-spacing:-.035em}
+  h3{font-size:16px}
+  small,.muted{color:var(--muted)}
+  [hidden]{display:none!important}
+  #app{height:100vh;height:100dvh;display:grid;grid-template-rows:auto minmax(0,1fr) auto}
+  header{background:var(--pine);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(9px + env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) 10px max(14px,env(safe-area-inset-left))}
+  header small{color:#d6e8db}
+  #wallet{white-space:nowrap;color:var(--gold);font-size:16px;font-weight:750;padding:6px 10px;border-radius:10px;background:#244837}
+  main,.screen{min-height:0}
+  .screen{height:100%;overflow:auto}
+  .content{max-width:790px;margin:auto;padding:16px}
+  .map-screen{display:grid;grid-template-rows:auto minmax(100px,1fr) auto}
+  .map-toolbar{padding:6px 10px;background:var(--white);display:flex;align-items:center;justify-content:space-between;gap:8px;z-index:2}
+  #position-mode{flex-shrink:0}
+  #position-mode,#locate,.close{background:#fff;color:var(--pine);border:1px solid #c5d3c8;border-radius:8px;min-height:44px;padding:5px 9px;font-weight:700}
+  #radar{font-size:13px;font-weight:650}
+  #radar[data-heat="caliente"]{color:#aa3426}
+  #radar[data-heat="templado"]{color:#8a5209}
+  #radar[data-heat="frío"]{color:#265c81}
+  .map-wrap{position:relative;min-height:0;background:#e8efdf;isolation:isolate}
+  #map{height:100%;width:100%;background:linear-gradient(145deg,#e5efdb,#d4e4cb);font:inherit;z-index:0}
+  #map .leaflet-interactive:focus{outline:2px solid #0e73a0;outline-offset:3px}
+  #locate{position:absolute;z-index:1;bottom:25px;right:10px;font-size:13px;box-shadow:0 1px 4px #17382b26}
+  #map-bottom{background:var(--white);padding:7px 12px;border-top:1px solid var(--line);max-height:40dvh;overflow:auto}
+  #map-status{font-size:12px;margin:3px 0}
+  .legend{display:flex;flex-wrap:wrap;gap:3px 12px;font-size:12px;color:var(--muted)}
+  .legend span::before{content:"";display:inline-block;background:var(--dot);width:8px;height:8px;border-radius:50%;margin-right:4px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+  .tree-heading{flex-wrap:nowrap;align-items:flex-start}
+  .actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .hint{margin-top:5px;font-size:13px;color:var(--muted)}
+  .cards,.stats,.teams{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0 16px}
+  .teams{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .tile,.entry{border:1px solid var(--line);border-radius:12px;background:var(--white);padding:10px;overflow-wrap:anywhere}
+  .entry{margin:8px 0}
+  .tile strong,.tile small{display:block}
+  .rare{background:#fff4d3;border-color:#c99537}
+  .entries{margin:8px 0 16px}
+  .ref-line{font-size:12px;color:var(--muted);margin:10px 0}
+  progress{display:block;width:100%;margin:6px 0;accent-color:var(--green)}
+  nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--white);border-top:1px solid var(--line);padding:2px max(4px,env(safe-area-inset-right)) calc(3px + env(safe-area-inset-bottom)) max(4px,env(safe-area-inset-left))}
+  nav button{min-height:49px;background:transparent;color:var(--muted);border:0;border-top:3px solid transparent;padding:3px 2px;font-size:12px;font-weight:700}
+  nav button[aria-selected="true"]{border-top-color:var(--green);color:var(--pine);background:#eaf2e8}
+  #notice{position:fixed;top:calc(56px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:5;width:max-content;max-width:calc(100% - 24px);background:var(--pine);color:white;border-radius:9px;padding:8px 13px;box-shadow:0 2px 8px #13281b35;pointer-events:none}
+  #duel-banner{display:block;width:100%;min-height:31px;border:0;background:#ffe5c9;color:#642b16;font-weight:700}
+  #storage-error{background:#fff0d6;color:#5e3100;text-align:center;font-size:12px;padding:3px 8px}
+  @media(min-width:650px){.cards,.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.map-toolbar,#map-bottom{padding-left:18px;padding-right:18px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div>
+    <header>
+      <div><h1>Forestrix</h1><small>University Parks, Oxford</small></div>
+      <div id="wallet" aria-label="Tu saldo de Savia">0 Savia</div>
+    </header>
+    <button id="duel-banner" type="button" hidden></button>
+    <div id="storage-error" role="alert" hidden>El navegador no puede guardar la partida. Exporta tus datos antes de cerrar.</div>
+  </div>
+  <main>
+    <section id="panel-mapa" class="screen map-screen" role="tabpanel" aria-labelledby="tab-mapa">
+      <div class="map-toolbar">
+        <div><div id="radar">Radar · esperando ubicación</div><small id="gps-status" aria-live="polite">Buscando GPS…</small></div>
+        <button id="position-mode" type="button">Modo prueba</button>
+      </div>
+      <div class="map-wrap">
+        <div id="map" aria-label="Mapa de University Parks"></div>
+        <button id="locate" type="button">Centrar mapa</button>
+      </div>
+      <div id="map-bottom">
+        <div id="tree-detail" hidden></div>
+        <div id="map-overview">
+          <div class="legend" aria-label="Estados de los árboles">
+            <span style="--dot:var(--free)">Libre</span><span style="--dot:var(--mine)">Mío</span><span style="--dot:var(--rival)">Rival</span><span style="--dot:var(--dry)">Seco</span>
+          </div>
+          <p id="map-status" class="muted" role="status">Buscando árboles en OpenStreetMap…</p>
+          <button id="reload-trees" class="secondary" type="button" hidden>Reintentar carga</button>
+        </div>
+      </div>
+    </section>
+    <section id="panel-herbario" class="screen" role="tabpanel" aria-labelledby="tab-herbario" hidden><div class="content" id="herbarium"></div></section>
+    <section id="panel-arboles" class="screen" role="tabpanel" aria-labelledby="tab-arboles" hidden><div class="content" id="my-trees"></div></section>
+    <section id="panel-perfil" class="screen" role="tabpanel" aria-labelledby="tab-perfil" hidden><div class="content" id="profile"></div></section>
+  </main>
+  <nav role="tablist" aria-label="Pantallas">
+    <button id="tab-mapa" role="tab" aria-controls="panel-mapa" aria-selected="true" type="button">Mapa</button>
+    <button id="tab-herbario" role="tab" aria-controls="panel-herbario" aria-selected="false" type="button">Herbario</button>
+    <button id="tab-arboles" role="tab" aria-controls="panel-arboles" aria-selected="false" type="button">Mis árboles</button>
+    <button id="tab-perfil" role="tab" aria-controls="panel-perfil" aria-selected="false" type="button">Perfil</button>
+  </nav>
+</div>
+<div id="notice" role="status" hidden></div>
+<input id="camera" type="file" accept="image/*" capture="environment" hidden>
+<noscript>Activa JavaScript para jugar a Forestrix.</noscript>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const STORE = 'forestrix.oxford.v1';
+const DAY = 86400000;
+const VISIT_BLOCK = 5 * 60000;
+const DUEL_TIME = 120000;
+const RIVAL_INTERVAL = 10 * 60000;
+const CACHE_AGE = 7 * DAY;
+const MAX_TREES = 5;
+const TEAMS = {roble:'Roble', haya:'Haya', abedul:'Abedul'};
+const LEVELS = ['Brote','Joven','Adulto','Centenario'];
+const VARIANTS = {normal:'Normal', flor:'En flor', otono:'Otoño', dorada:'Dorada', especial:'Despierto'};
+const TIERS = {
+  comun:{name:'Común', price:10, points:1},
+  notable:{name:'Notable', price:30, points:3},
+  remarcable:{name:'Remarcable', price:80, points:8}
+};
+const CENTER = [51.762,-1.254];
+const BOX = [51.7570,-1.2605,51.7657,-1.2470];
+const ENDPOINTS = ['https://overpass.private.coffee/api/interpreter','https://overpass-api.de/api/interpreter'];
+const SNAPSHOT = {elements:[
+{"type":"node","id":3102635383,"lat":51.7598434,"lon":-1.2504589,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635384,"lat":51.7598538,"lon":-1.2501429,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635388,"lat":51.7603617,"lon":-1.2491845,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635390,"lat":51.7604374,"lon":-1.2487672,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635391,"lat":51.7604965,"lon":-1.2491956,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635392,"lat":51.7606073,"lon":-1.249951,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635393,"lat":51.7607643,"lon":-1.2501634,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635394,"lat":51.760781,"lon":-1.2516368,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635395,"lat":51.7608142,"lon":-1.2499251,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635396,"lat":51.7608696,"lon":-1.2494782,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635397,"lat":51.7608769,"lon":-1.2489278,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635398,"lat":51.7608917,"lon":-1.2502926,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635399,"lat":51.7609795,"lon":-1.2512268,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635400,"lat":51.7610432,"lon":-1.2509741,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635401,"lat":51.7610912,"lon":-1.2502391,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635402,"lat":51.7610949,"lon":-1.2508781,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635403,"lat":51.761202,"lon":-1.2508965,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635404,"lat":51.7612498,"lon":-1.251541,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635405,"lat":51.7613017,"lon":-1.2510923,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635406,"lat":51.76137,"lon":-1.2504958,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635407,"lat":51.7614993,"lon":-1.251011,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635408,"lat":51.7616286,"lon":-1.2508024,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635409,"lat":51.7617136,"lon":-1.2509279,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635410,"lat":51.7618133,"lon":-1.2512862,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635411,"lat":51.7619536,"lon":-1.2513859,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635412,"lat":51.7619887,"lon":-1.2511791,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635413,"lat":51.7620885,"lon":-1.2514838,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635414,"lat":51.7622011,"lon":-1.2513324,"tags":{"natural":"tree"}},
+{"type":"node","id":3102635415,"lat":51.7623341,"lon":-1.2517239,"tags":{"natural":"tree"}},
+{"type":"node","id":3741578546,"lat":51.7594317,"lon":-1.2506543,"tags":{"natural":"tree"}},
+{"type":"node","id":8224442660,"lat":51.762307,"lon":-1.2578123,"tags":{"natural":"tree"}},
+{"type":"node","id":8668770710,"lat":51.7601844,"lon":-1.2577194,"tags":{"natural":"tree","species":"Styphnolobium japonicum"}},
+{"type":"node","id":8668823424,"lat":51.7605539,"lon":-1.2528142,"tags":{"natural":"tree","species":"Liriodendron tulipifera"}},
+{"type":"node","id":8668823430,"lat":51.7606963,"lon":-1.2584117,"tags":{"natural":"tree","species":"Koelreuteria paniculata"}},
+{"type":"node","id":8668823431,"lat":51.7620665,"lon":-1.2500418,"tags":{"natural":"tree","species":"Robinia pseudoacacia"}},
+{"type":"node","id":8668823432,"lat":51.7621861,"lon":-1.2500927,"tags":{"natural":"tree","species":"Acer saccharinum"}},
+{"type":"node","id":8668823433,"lat":51.7639794,"lon":-1.2518654,"tags":{"natural":"tree","species":"Tilia tomentosa"}},
+{"type":"node","id":8668823434,"lat":51.7612317,"lon":-1.2496841,"tags":{"natural":"tree"}},
+{"type":"node","id":8668823435,"lat":51.7612291,"lon":-1.2498218,"tags":{"natural":"tree"}},
+{"type":"node","id":8668823436,"lat":51.7613052,"lon":-1.2497439,"tags":{"natural":"tree"}},
+{"type":"node","id":8668823437,"lat":51.7613073,"lon":-1.249612,"tags":{"natural":"tree"}},
+{"type":"node","id":8668823438,"lat":51.7612327,"lon":-1.2495431,"tags":{"natural":"tree"}},
+{"type":"node","id":8668823439,"lat":51.7611596,"lon":-1.2495816,"tags":{"natural":"tree"}},
+{"type":"node","id":8668823440,"lat":51.7611484,"lon":-1.2497267,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073388,"lat":51.762925,"lon":-1.2543863,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073389,"lat":51.7629794,"lon":-1.2543753,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073390,"lat":51.7630426,"lon":-1.2542781,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073391,"lat":51.763044,"lon":-1.2541406,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073392,"lat":51.7629982,"lon":-1.2540503,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073393,"lat":51.7629332,"lon":-1.2540225,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073394,"lat":51.7628642,"lon":-1.2540674,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073395,"lat":51.7632253,"lon":-1.2539259,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073397,"lat":51.7621345,"lon":-1.2527222,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073398,"lat":51.7622712,"lon":-1.252721,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073399,"lat":51.7623301,"lon":-1.2526169,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073400,"lat":51.7622547,"lon":-1.2524685,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073401,"lat":51.7629991,"lon":-1.2538955,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073402,"lat":51.762891,"lon":-1.253795,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073403,"lat":51.7628398,"lon":-1.2537475,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073404,"lat":51.7628387,"lon":-1.2535808,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073405,"lat":51.7627473,"lon":-1.2536614,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073406,"lat":51.7626883,"lon":-1.2534482,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073407,"lat":51.7625449,"lon":-1.2533219,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073408,"lat":51.7624761,"lon":-1.2532612,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073409,"lat":51.7624944,"lon":-1.2534264,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073410,"lat":51.7622542,"lon":-1.2530935,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073411,"lat":51.7620598,"lon":-1.2530224,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073412,"lat":51.7618921,"lon":-1.252934,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073413,"lat":51.7619855,"lon":-1.2528506,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073414,"lat":51.7633883,"lon":-1.2526268,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073415,"lat":51.7632434,"lon":-1.2524429,"tags":{"natural":"tree"}},
+{"type":"node","id":9233073416,"lat":51.7631244,"lon":-1.2522757,"tags":{"natural":"tree"}},
+{"type":"node","id":9233082817,"lat":51.7629601,"lon":-1.2521357,"tags":{"natural":"tree"}},
+{"type":"node","id":9233082818,"lat":51.7632563,"lon":-1.252027,"tags":{"natural":"tree"}},
+{"type":"node","id":9233082819,"lat":51.7624425,"lon":-1.2515529,"tags":{"natural":"tree"}},
+{"type":"node","id":9233082820,"lat":51.7622843,"lon":-1.2514866,"tags":{"natural":"tree"}},
+{"type":"node","id":12875442805,"lat":51.7608818,"lon":-1.2512952,"tags":{"natural":"tree"}},
+{"type":"node","id":13100408199,"lat":51.7610933,"lon":-1.2517024,"tags":{"natural":"tree"}},
+{"type":"node","id":13100408200,"lat":51.7610582,"lon":-1.2518081,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409001,"lat":51.7612035,"lon":-1.2518804,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409002,"lat":51.7612195,"lon":-1.2517282,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409003,"lat":51.7611332,"lon":-1.2515192,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409004,"lat":51.7611045,"lon":-1.2513928,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409005,"lat":51.7609751,"lon":-1.2516662,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409006,"lat":51.7613345,"lon":-1.2512173,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409007,"lat":51.7612961,"lon":-1.2508071,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409008,"lat":51.7614638,"lon":-1.2506548,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409009,"lat":51.7617033,"lon":-1.2505104,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409886,"lat":51.7609432,"lon":-1.2495615,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409887,"lat":51.7610451,"lon":-1.2497136,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409888,"lat":51.7608712,"lon":-1.2493467,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409889,"lat":51.7609709,"lon":-1.2493539,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409890,"lat":51.7609333,"lon":-1.249268,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409891,"lat":51.7609598,"lon":-1.2491857,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409892,"lat":51.7611271,"lon":-1.248962,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409893,"lat":51.7607262,"lon":-1.2496653,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409894,"lat":51.7607417,"lon":-1.2495024,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409895,"lat":51.7606376,"lon":-1.2492394,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409896,"lat":51.760683,"lon":-1.2490998,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409897,"lat":51.7606287,"lon":-1.2489495,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409898,"lat":51.7612744,"lon":-1.2494684,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409899,"lat":51.7612312,"lon":-1.2493951,"tags":{"natural":"tree"}},
+{"type":"node","id":13100409900,"lat":51.7612068,"lon":-1.249302,"tags":{"natural":"tree"}},
+{"type":"node","id":13100415501,"lat":51.7612899,"lon":-1.2493289,"tags":{"natural":"tree"}},
+{"type":"node","id":13100415502,"lat":51.7614638,"lon":-1.2492644,"tags":{"natural":"tree"}},
+{"type":"node","id":13100415503,"lat":51.7609355,"lon":-1.2500482,"tags":{"natural":"tree"}},
+{"type":"node","id":13100415504,"lat":51.7609288,"lon":-1.2497368,"tags":{"natural":"tree"}},
+{"type":"node","id":13100415505,"lat":51.7604471,"lon":-1.2491356,"tags":{"natural":"tree"}},
+{"type":"node","id":13100415506,"lat":51.7604426,"lon":-1.2489799,"tags":{"natural":"tree"}},
+{"type":"node","id":13100415507,"lat":51.7602167,"lon":-1.2488583,"tags":{"natural":"tree"}}
+]}; // Copia de nodos de OpenStreetMap dentro del perímetro, 2026-11-16.
+const PARK_OUTLINE = [[[51.7652305,-1.2508786],[51.7652182,-1.2509359],[51.7651775,-1.2511045],[51.7650721,-1.2515411],[51.76498,-1.2518913],[51.764914,-1.2521583],[51.764929,-1.2521675],[51.7648688,-1.2522651],[51.7647611,-1.2525323],[51.764664,-1.252773],[51.7645228,-1.2531135],[51.7643755,-1.2534644],[51.7642505,-1.2537858],[51.7641221,-1.2540918],[51.7640062,-1.2543293],[51.7640002,-1.2543416],[51.7639945,-1.2543533],[51.7638739,-1.2546054],[51.763741,-1.2548801],[51.7635756,-1.2552134],[51.7633089,-1.2557932],[51.7632505,-1.2559346],[51.7629664,-1.2566382],[51.7628456,-1.2571888],[51.7626976,-1.2578468],[51.7625543,-1.2584144],[51.7625099,-1.2586024],[51.7623083,-1.2592268],[51.7621802,-1.2595673],[51.7620405,-1.2598572],[51.7619488,-1.2598425],[51.7619527,-1.2597637],[51.7619162,-1.2597526],[51.7615763,-1.2595673],[51.7609402,-1.2590836],[51.760715,-1.2588278],[51.7605078,-1.2586004],[51.7601633,-1.2580951],[51.7599917,-1.2577479],[51.7599271,-1.2576125],[51.7599171,-1.2575561],[51.7599334,-1.2575162],[51.759928,-1.2574769],[51.7599256,-1.2574417],[51.7600314,-1.2569819],[51.7600985,-1.2567548],[51.7601775,-1.2563617],[51.7602644,-1.2559488],[51.7600734,-1.2557383],[51.7598471,-1.2555819],[51.7598068,-1.2555572],[51.7599917,-1.254705],[51.7600629,-1.2544028],[51.760007,-1.2543775],[51.7600485,-1.2541807],[51.7601372,-1.25376],[51.7601453,-1.2530973],[51.7598461,-1.2529459],[51.7600809,-1.2522379],[51.7603115,-1.2514175],[51.7599593,-1.2511105],[51.7598156,-1.2509842],[51.7595903,-1.2507933],[51.7594034,-1.2506349],[51.7594259,-1.2505716],[51.75944,-1.2505199],[51.7594656,-1.2504125],[51.7595205,-1.2502179],[51.7596444,-1.2497798],[51.7597505,-1.2493644],[51.7598778,-1.2487607],[51.7599679,-1.2482973],[51.760094,-1.2477062],[51.7601224,-1.2476235],[51.7602706,-1.2476596],[51.760242,-1.247779],[51.7602634,-1.2477957],[51.7603038,-1.2476699],[51.7604981,-1.2477995],[51.7605792,-1.2479515],[51.760744,-1.2481281],[51.7609267,-1.2482487],[51.7610537,-1.2483342],[51.7612184,-1.2485138],[51.7613286,-1.2486071],[51.7614584,-1.2487534],[51.7614794,-1.2487944],[51.761512,-1.2488116],[51.7615387,-1.2488361],[51.7617393,-1.2490753],[51.7620352,-1.249391],[51.7623084,-1.2497076],[51.7624248,-1.2498526],[51.7625054,-1.2500148],[51.762552,-1.2500614],[51.7625957,-1.250101],[51.7626138,-1.2500805],[51.7626329,-1.2500847],[51.7628115,-1.2502364],[51.7628342,-1.2502957],[51.7628785,-1.2503371],[51.7629336,-1.2503393],[51.7629769,-1.2504059],[51.7632065,-1.2506346],[51.7632708,-1.2506914],[51.7633707,-1.2507991],[51.7634596,-1.2508407],[51.7635629,-1.2509181],[51.7636195,-1.2509225],[51.7637483,-1.2509509],[51.7638248,-1.2509384],[51.7638649,-1.2509588],[51.7639593,-1.2509641],[51.7640047,-1.2510088],[51.7640244,-1.2509892],[51.7640482,-1.251002],[51.7641871,-1.2509446],[51.7642989,-1.2509101],[51.7643434,-1.2508493],[51.7644551,-1.2508087],[51.7646077,-1.2508228],[51.7647713,-1.2508614],[51.7648692,-1.2508572],[51.7650699,-1.2508729],[51.7652305,-1.2508786]]]; // Relación 12532311 de OpenStreetMap.
+const clockDate = new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'});
+const fullDate = new Intl.DateTimeFormat('es-ES',{timeZone:'Europe/London',dateStyle:'medium'});
+const dayKey = now => clockDate.format(now);
+function nextMidnight(now) {
+  // Oxford cambia de hora dos veces al año. Busca el instante en que cambia la fecha local.
+  const today = dayKey(now);
+  let low = now, high = now + 26 * 3600000;
+  while (high - low > 1) {
+    const mid = Math.floor((low + high) / 2);
+    if (dayKey(mid) === today) low = mid;
+    else high = mid;
+  }
+  return high;
+}
+function initialState(now) {
+  return {
+    savia:0, stats:{earned:0, spent:0, meters:0, parkMs:0, wins:0, losses:0},
+    trees:{}, discoveries:{}, species:{}, cards:{}, challenges:{}, eventos:[],
+    points:{roble:0,haya:0,abedul:0}, awake:{}, daily:{date:dayKey(now), parkMs:0, timeSavia:0, discoverySavia:0},
+    nextScore:nextMidnight(now), nextRivalAt:null, rivalTurn:0, cache:null, mode:'gps'
+  };
+}
+let state;
+try { state = JSON.parse(localStorage.getItem(STORE)) || initialState(Date.now()); }
+catch { state = initialState(Date.now()); }
+let trees = new Map();
+let outline = PARK_OUTLINE;
+let map, parkLayer, markers, playerMarker, accuracyCircle;
+let activeTab = 'mapa', selected = null, photoTree = null;
+let mode = state.mode === 'test' ? 'test' : 'gps';
+let gpsWatch, gpsGeneration = 0, gpsText = '', locationFix = null, inside = false, walkAnchor = null;
+let lastTick = Date.now(), noticeTimer, lastPaint = {}, loading = false;
+const markerById = new Map();
+const colors = {libre:'#59615e', mio:'#227847', rival:'#ad332e', seco:'#855331'};
+const html = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+const number = new Intl.NumberFormat('es-ES');
+function save() {
+  try { localStorage.setItem(STORE, JSON.stringify(state)); $('storage-error').hidden = true; }
+  catch { $('storage-error').hidden = false; }
+}
+function notify(message) {
+  const el = $('notice');
+  el.textContent = message;
+  el.hidden = false;
+  clearTimeout(noticeTimer);
+  noticeTimer = setTimeout(() => { el.hidden = true; }, 5200);
+}
+function coords(fix = locationFix) {
+  return fix ? {lat:fix.lat,lng:fix.lng,modo:fix.mode === 'test' ? 'prueba' : 'gps'} : null;
+}
+function event(tipo, id, now, posicion = coords(), extra = {}) {
+  state.eventos.push({tipo, fecha:new Date(now).toISOString(), id_arbol:id, posicion, ...extra});
+}
+function meters(a,b) {
+  const rad = Math.PI / 180;
+  const h = Math.sin((b.lat-a.lat)*rad/2)**2 + Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin((b.lng-a.lng)*rad/2)**2;
+  return 12742000*Math.asin(Math.sqrt(Math.min(1,h)));
+}
+function inRing(lat,lng,ring) {
+  let result = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [aLat,aLng] = ring[i], [bLat,bLng] = ring[j];
+    if ((aLat > lat) !== (bLat > lat) && lng < (bLng - aLng)*(lat-aLat)/(bLat-aLat)+aLng) result = !result;
+  }
+  return result;
+}
+function inPark(fix, rings = outline) {
+  if (!fix) return false;
+  // Los anillos están en orden: perímetro exterior seguido de posibles huecos.
+  return inRing(fix.lat,fix.lng,rings[0]) && !rings.slice(1).some(ring => inRing(fix.lat,fix.lng,ring));
+}
+function heightMeters(value) {
+  const match = String(value ?? '').trim().replace(',', '.').match(/^(\d+(?:\.\d+)?)\s*(m|metres?|meters?|ft|feet|')?$/i);
+  if (!match || Number(match[1]) <= 0) return null;
+  return Number(match[1]) * (/^(ft|feet|')$/i.test(match[2] || '') ? 0.3048 : 1);
+}
+function treeData(raw) {
+  const tags = raw.tags || {};
+  const species = (tags.species || '').trim();
+  const genus = (tags.genus || '').trim();
+  const id = String(raw.id);
+  return {
+    id,lat:raw.lat,lng:raw.lon,species,genus,height:heightMeters(tags.height),
+    label:species || 'Árbol (especie desconocida)',
+    cardKey:species ? 'especie:' + species.toLowerCase() : 'arbol:' + id,
+    cardLabel:species || (genus ? 'Género ' + genus : 'Árbol sin identificar') + ' · ' + id,
+    tier:'comun'
+  };
+}
+function overpassOutline(elements) {
+  const relation = elements.find(item => item.type === 'relation' && item.id === 12532311);
+  if (!relation) return PARK_OUTLINE;
+  const same = (a,b) => a[0] === b[0] && a[1] === b[1];
+  function join(role) {
+    const parts = relation.members.filter(member => member.role === role && member.type === 'way')
+      .map(member => (member.geometry || []).map(point => [point.lat,point.lon]));
+    if (parts.some(part => part.length < 2)) return null;
+    const rings = [];
+    while (parts.length) {
+      const ring = parts.pop();
+      while (!same(ring[0],ring.at(-1))) {
+        const end = ring.at(-1);
+        const index = parts.findIndex(part => same(part[0],end) || same(part.at(-1),end));
+        if (index === -1) return null;
+        const part = parts.splice(index,1)[0];
+        if (!same(part[0],end)) part.reverse();
+        ring.push(...part.slice(1));
+      }
+      rings.push(ring);
+    }
+    return rings;
+  }
+  const exterior = join('outer');
+  const interior = join('inner');
+  if (!exterior?.length || !interior) return PARK_OUTLINE;
+  const polygon = exterior.find(ring => inRing(CENTER[0],CENTER[1],ring));
+  return polygon ? [polygon,...interior.filter(ring => inRing(ring[0][0],ring[0][1],polygon))] : PARK_OUTLINE;
+}
+function parseOverpass(json) {
+  const boundary = overpassOutline(json.elements);
+  const catalog = json.elements.filter(row => row.type === 'node' && row.tags?.natural === 'tree')
+    .map(treeData).filter(tree => inPark(tree,boundary));
+  const measured = catalog.filter(tree => tree.height !== null).sort((a,b) => b.height-a.height || Number(a.id)-Number(b.id));
+  for (const tree of measured) tree.tier = tree.height > 15 ? 'notable' : 'comun';
+  if (measured.length) measured[0].tier = 'remarcable';
+  return {catalog,outline:boundary};
+}
+function gain(amount) { state.savia += amount; state.stats.earned += amount; }
+function spend(amount) { state.savia -= amount; state.stats.spent += amount; }
+function vitality(record, now) { return record?.owner ? Math.max(0,Math.ceil((record.until-now)/DAY)) : 0; }
+function status(id,now) {
+  const record = state.trees[id];
+  if (!record?.owner || now >= record.until + 3*DAY) return 'libre';
+  if (!vitality(record,now)) return 'seco';
+  return record.owner === 'roble' ? 'mio' : 'rival';
+}
+function ownedCount(now) {
+  return Object.values(state.trees).filter(tree => tree.owner === 'roble' && now < tree.until + 3*DAY).length;
+}
+function reservedCount() { return Object.values(state.challenges).filter(challenge => challenge.direction === 'out').length; }
+function takeTree(id,owner,now) {
+  state.trees[id] = {owner,until:now+7*DAY,level:1,lastCare:state.trees[id]?.lastCare || '',tree:trees.get(id)};
+}
+function daily(date) {
+  if (state.daily.date !== date) state.daily = {date,parkMs:0,timeSavia:0,discoverySavia:0};
+  return state.daily;
+}
+function giveCard(tree,variant = null) {
+  const collection = state.cards[tree.cardKey] ||= {label:tree.cardLabel,variants:{},used:0};
+  if (!variant) {
+    const roll = Math.random();
+    variant = roll < .10 ? ['flor','otono','dorada'][Math.floor(roll*30)] : 'normal';
+  }
+  collection.variants[variant] = (collection.variants[variant] || 0) + 1;
+  return variant;
+}
+function cardCount(key) {
+  const stack = state.cards[key];
+  return stack ? Object.entries(stack.variants).reduce((total,[variant,count]) => total + (variant === 'especial' ? 0 : count),0) - stack.used : 0;
+}
+function hash(value) {
+  let result = 2166136261;
+  for (const char of value) result = Math.imul(result ^ char.charCodeAt(0), 16777619);
+  result = Math.imul(result ^ (result >>> 16),0x85ebca6b);
+  result = Math.imul(result ^ (result >>> 13),0xc2b2ae35);
+  return (result ^ (result >>> 16)) >>> 0;
+}
+function awakeTrees(date) {
+  return liveCatalog.map(tree=>({tree,rank:hash(date + '/' + tree.id)}))
+    .sort((a,b)=>a.rank-b.rank || Number(a.tree.id)-Number(b.tree.id)).slice(0,3).map(entry=>entry.tree);
+}
+let radar = {key:'',candidates:[]};
+function awakeCandidates(date) {
+  if (radar.key !== date) {
+    const initial = awakeTrees(date);
+    if (initial.length && state.awakeRoster?.date !== date) {
+      state.awakeRoster = {date,trees:initial};
+      save();
+    }
+    radar = {key:initial.length ? date : '',candidates:state.awakeRoster?.date === date ? state.awakeRoster.trees : initial};
+  }
+  return radar.candidates.filter(tree => !state.awake[date]?.[tree.id]);
+}
+function checkAwake(now) {
+  if (!inside || !locationFix) return false;
+  const date = dayKey(now);
+  let changed = false;
+  for (const tree of awakeCandidates(date)) {
+    if (meters(locationFix,tree) >= 20) continue;
+    (state.awake[date] ||= {})[tree.id] = true;
+    gain(30);
+    giveCard(tree,'especial');
+    event('despierto_encontrado',tree.id,now);
+    notify('¡Árbol despierto! +30 Savia y carta especial.');
+    changed = true;
+  }
+  return changed;
+}
+function pointsAt(time) {
+  const points = {roble:0,haya:0,abedul:0};
+  for (const [id,record] of Object.entries(state.trees)) {
+    if (vitality(record,time) && record.owner) points[record.owner] += (TIERS[trees.get(id)?.tier]?.points || 1) * record.level;
+  }
+  return points;
+}
+function settleChallenge(id,challenge,now) {
+  const record = state.trees[id];
+  const attack = challenge.direction === 'out';
+  const defended = attack && challenge.startVitality > 4;
+  const ownerMatches = record?.owner === (attack ? challenge.rival : 'roble');
+  if (ownerMatches && defended) {
+    const tree = trees.get(id);
+    event('defender',id,now,tree ? {lat:tree.lat,lng:tree.lng,modo:'rival'} : null,{equipo:challenge.rival,simulado:true});
+    state.stats.losses++;
+    notify('El rival defendió su árbol. Reto perdido.');
+  } else if (ownerMatches && attack) {
+    takeTree(id,'roble',now);
+    state.stats.wins++;
+    notify('¡Reto ganado! El árbol ya es tuyo.');
+  } else if (ownerMatches) {
+    takeTree(id,challenge.rival,now);
+    state.stats.losses++;
+    notify(TEAMS[challenge.rival] + ' ha ganado un reto por tu árbol.');
+  }
+  delete state.challenges[id];
+}
+function advanceWorld(now) {
+  let changed = false;
+  // Resuelve los vencimientos en orden antes de cerrar el marcador de cada día.
+  const due = Object.entries(state.challenges).filter(([,c])=>c.ends<=now).sort((a,b)=>a[1].ends-b[1].ends);
+  for (const [id,challenge] of due) {
+    while (state.nextScore <= challenge.ends) {
+      settleScore();
+      changed = true;
+    }
+    settleChallenge(id,challenge,challenge.ends);
+    changed = true;
+  }
+  while (state.nextScore <= now) {
+    settleScore();
+    changed = true;
+  }
+  for (const record of Object.values(state.trees)) {
+    if (record.owner && now >= record.until + 3*DAY) {
+      record.owner = null;
+      changed = true;
+    }
+  }
+  return changed;
+}
+function settleScore() {
+  const score = pointsAt(state.nextScore-1);
+  for (const team of Object.keys(score)) state.points[team] += score[team];
+  state.nextScore = nextMidnight(state.nextScore);
+}
+function processRival(now) {
+  if (document.hidden || state.nextRivalAt === null || now < state.nextRivalAt) return false;
+  const available = Object.keys(state.trees).sort((a,b)=>Number(a)-Number(b))
+    .filter(id=>trees.has(id) && status(id,now)==='mio' && !state.challenges[id]);
+  if (!available.length) return false;
+  const id = available[state.rivalTurn % available.length];
+  const rival = state.rivalTurn % 2 ? 'abedul' : 'haya';
+  state.rivalTurn++;
+  state.nextRivalAt = now + RIVAL_INTERVAL;
+  state.challenges[id] = {direction:'in',rival,ends:now+DUEL_TIME};
+  const tree = trees.get(id);
+  event('retar',id,now,{lat:tree.lat,lng:tree.lng,modo:'rival'},{equipo:rival,simulado:true});
+  notify('¡' + TEAMS[rival] + ' reta a uno de tus árboles! Tienes 2 min para defender.');
+  return true;
+}
+function tick(now = Date.now()) {
+  const before = lastTick;
+  lastTick = now;
+  let changed = advanceWorld(now);
+  if (!document.hidden && inside && locationFix && now > before && now-before <= 10000) {
+    let cursor = before;
+    while (cursor < now) {
+      const date = dayKey(cursor);
+      const end = date === dayKey(now) ? now : nextMidnight(cursor);
+      const elapsed = end-cursor;
+      const totals = daily(date);
+      totals.parkMs += elapsed;
+      state.stats.parkMs += elapsed;
+      const earned = Math.min(12,Math.floor(totals.parkMs/VISIT_BLOCK)) - totals.timeSavia;
+      if (earned > 0) {
+        totals.timeSavia += earned;
+        gain(earned);
+        notify('+' + earned + ' Savia por tu tiempo en el parque.');
+      }
+      cursor = end;
+    }
+    changed = true;
+  }
+  if (processRival(now)) changed = true;
+  if (!document.hidden && checkAwake(now)) changed = true;
+  if (changed) save();
+  return now;
+}
+function distanceTo(tree) { return locationFix ? meters(locationFix,tree) : Infinity; }
+function duelPrice(tree,now) { return TIERS[tree.tier].price + 5*vitality(state.trees[tree.id],now); }
+function restriction(action,tree,now) {
+  const id = tree.id;
+  const record = state.trees[id];
+  const condition = status(id,now);
+  if (distanceTo(tree) >= 20) return 'Acércate a menos de 20 m.';
+  if (action === 'discover' && state.discoveries[id]) return 'Este árbol ya está en tu herbario.';
+  if (action === 'claim') {
+    if (condition !== 'libre' || state.challenges[id]) return 'El árbol debe estar libre.';
+    if (ownedCount(now)+reservedCount() >= MAX_TREES) return 'Tus árboles y retos salientes ya ocupan las 5 plazas.';
+    if (state.savia < TIERS[tree.tier].price) return 'Te falta Savia.';
+  }
+  if (action === 'care' || action === 'level') {
+    if (record?.owner !== 'roble' || condition === 'libre') return 'Debes ser su guardián.';
+    if (action === 'care' && record.lastCare === dayKey(now)) return 'Ya lo has cuidado hoy.';
+    if (action === 'level' && (record.level >= LEVELS.length || cardCount(tree.cardKey) < 3)) return 'Necesitas 3 cartas disponibles y un nivel sin completar.';
+  }
+  if (action === 'challenge') {
+    if (condition !== 'rival' && !(condition === 'seco' && record?.owner && record.owner !== 'roble')) return 'El árbol debe pertenecer a un rival.';
+    if (state.challenges[id]) return 'Ya hay un reto activo.';
+    if (ownedCount(now)+reservedCount() >= MAX_TREES) return 'Necesitas una plaza libre para ganar el árbol.';
+    if (state.savia < duelPrice(tree,now)) return 'Te falta Savia.';
+  }
+  if (action === 'defend' && state.challenges[id]?.direction !== 'in') return 'El reto ya ha terminado.';
+  return '';
+}
+function act(action,id) {
+  const tree = trees.get(id);
+  if (!tree) return;
+  const now = tick();
+  const block = restriction(action,tree,now);
+  if (block) { notify(block); render(now); return; }
+  const record = state.trees[id];
+  if (action === 'discover') {
+    const totals = daily(dayKey(now));
+    const newSpecies = !!tree.species && !state.species[tree.cardKey];
+    const reward = Math.min(5,20-totals.discoverySavia);
+    state.discoveries[id] = {fecha:new Date(now).toISOString(),tree};
+    if (newSpecies) state.species[tree.cardKey] = tree.species;
+    totals.discoverySavia += reward;
+    gain(reward + (newSpecies ? 20 : 0));
+    const variant = giveCard(tree);
+    event('descubrir',id,now,coords(),{savia:reward+(newSpecies?20:0),carta:variant});
+    notify('Árbol añadido al herbario · +' + (reward + (newSpecies ? 20 : 0)) + ' Savia.');
+  } else if (action === 'claim') {
+    const price = TIERS[tree.tier].price;
+    spend(price);
+    takeTree(id,'roble',now);
+    if (state.nextRivalAt === null || state.nextRivalAt < now) state.nextRivalAt = now + RIVAL_INTERVAL;
+    event('reclamar',id,now,coords(),{savia_gastada:price});
+    notify('Ya eres guardián de este árbol.');
+  } else if (action === 'care') {
+    record.until = now + 7*DAY;
+    record.lastCare = dayKey(now);
+    gain(5);
+    const variant = giveCard(tree);
+    event('cuidar',id,now,coords(),{savia:5,carta:variant});
+    notify('Vitalidad restaurada · +5 Savia y carta.');
+  } else if (action === 'challenge') {
+    const price = duelPrice(tree,now);
+    spend(price);
+    state.challenges[id] = {direction:'out',rival:record.owner,ends:now+DUEL_TIME,startVitality:vitality(record,now)};
+    event('retar',id,now,coords(),{equipo_objetivo:record.owner,savia_gastada:price});
+    notify('Reto iniciado. Se resolverá en 2 minutos.');
+  } else if (action === 'defend') {
+    delete state.challenges[id];
+    state.stats.wins++;
+    event('defender',id,now);
+    notify('¡Defensa ganada! El árbol sigue siendo tuyo.');
+  } else if (action === 'level') {
+    state.cards[tree.cardKey].used += 3;
+    record.level++;
+    event('subir_nivel',id,now,coords(),{nivel:record.level});
+    notify('Tu árbol ha subido a ' + LEVELS[record.level-1].toLowerCase() + '.');
+  }
+  save();
+  render(now);
+}
+function setLocation(lat,lng,accuracy = null) {
+  const now = tick();
+  const previous = locationFix;
+  const fix = {lat,lng,accuracy,mode};
+  if (walkAnchor) {
+    const distance = meters(walkAnchor,fix);
+    const elapsed = (now-walkAnchor.time)/1000;
+    if (mode === 'test' || (accuracy <= 50 && (elapsed > 120 || distance >= Math.max(5,accuracy/2)))) {
+      if (mode === 'test' || (elapsed > 0 && elapsed <= 120 && distance/elapsed <= 4)) state.stats.meters += distance;
+      walkAnchor = {...fix,time:now};
+    }
+  } else if (mode === 'test' || accuracy <= 50) {
+    walkAnchor = {...fix,time:now};
+  }
+  const entered = inPark(fix);
+  locationFix = fix;
+  if (mode === 'test') state.testPosition = {lat,lng};
+  if (entered !== inside) {
+    inside = entered;
+    event(inside ? 'entrar_parque' : 'salir_parque',null,now);
+  }
+  checkAwake(now);
+  save();
+  drawPlayer();
+  if (!previous && mode === 'gps' && map && inPark(fix)) map.panTo([lat,lng]);
+  render(now);
+}
+function setMode(next,reason = '') {
+  tick();
+  if (inside && locationFix) event('salir_parque',null,Date.now(),coords(),{motivo:'cambio_modo'});
+  gpsGeneration++;
+  if (gpsWatch !== undefined) navigator.geolocation.clearWatch(gpsWatch);
+  gpsWatch = undefined;
+  mode = state.mode = next;
+  locationFix = walkAnchor = null;
+  inside = false;
+  save();
+  drawPlayer();
+  gpsText = reason;
+  if (next === 'test') {
+    gpsText ||= 'Modo prueba · toca el mapa para moverte';
+    if (map) fitPark();
+  } else if (!navigator.geolocation || !window.isSecureContext) {
+    setMode('test','GPS no disponible · toca el mapa para moverte');
+    return;
+  } else {
+    gpsText = 'Buscando GPS…';
+    const generation = gpsGeneration;
+    gpsWatch = navigator.geolocation.watchPosition(
+      position => {
+        if (generation !== gpsGeneration) return;
+        gpsText = 'GPS activo';
+        setLocation(position.coords.latitude,position.coords.longitude,position.coords.accuracy);
+      },
+      error => {
+        if (generation !== gpsGeneration) return;
+        setMode('test',error.code === 1 ? 'GPS denegado · toca el mapa' : 'GPS no disponible · toca el mapa');
+      },
+      {enableHighAccuracy:true,timeout:15000,maximumAge:5000}
+    );
+  }
+  render();
+}
+function drawPlayer() {
+  if (!map) return;
+  if (!locationFix) {
+    playerMarker?.remove();
+    accuracyCircle?.remove();
+    playerMarker = accuracyCircle = null;
+    return;
+  }
+  const point = [locationFix.lat,locationFix.lng];
+  if (!playerMarker) {
+    accuracyCircle = L.circle(point,{radius:0,interactive:false,color:'#246aba',weight:1,fillOpacity:.09}).addTo(map);
+    playerMarker = L.circleMarker(point,{radius:8,interactive:false,color:'#fff',weight:3,fillColor:'#1569c2',fillOpacity:1}).addTo(map);
+  }
+  accuracyCircle.setLatLng(point).setRadius(locationFix.accuracy || 0);
+  playerMarker.setLatLng(point).bringToFront();
+}
+function fitPark() {
+  if (map) map.fitBounds(L.latLngBounds(outline[0]),{padding:[17,17],maxZoom:17,animate:false});
+}
+function initMap() {
+  if (!window.L) return;
+  map = L.map('map',{zoomControl:false}).setView(CENTER,16);
+  L.control.zoom({position:'topleft'}).addTo(map);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  }).addTo(map);
+  parkLayer = L.polygon(outline,{color:'#416952',weight:2,fillOpacity:.05,dashArray:'5 5',interactive:false}).addTo(map);
+  markers = L.layerGroup().addTo(map);
+  fitPark();
+  map.on('click',({latlng}) => {
+    if (mode === 'test') setLocation(latlng.lat,latlng.lng);
+  });
+  const resize = new ResizeObserver(() => {
+    if (activeTab !== 'mapa') return;
+    map.invalidateSize({pan:false});
+    if (!locationFix && !selected) fitPark();
+  });
+  resize.observe($('map'));
+}
+function rebuildMarkers() {
+  if (!map) return;
+  parkLayer.setLatLngs(outline);
+  markers.clearLayers();
+  markerById.clear();
+  const now = Date.now();
+  for (const tree of trees.values()) {
+    const condition = status(tree.id,now);
+    const bounds = L.latLng(tree.lat,tree.lng);
+    const marker = L.marker(bounds,{icon:treeIcon(condition),alt:tree.label,title:tree.label,bubblingMouseEvents:false}).addTo(markers);
+    marker.on('click',() => {
+      selected = tree.id;
+      if (mode === 'test') setLocation(tree.lat,tree.lng);
+      render();
+    });
+    markerById.set(tree.id,{marker,condition});
+  }
+  drawPlayer();
+}
+function treeIcon(condition) {
+  const size = 21;
+  return L.divIcon({className:'tree-icon',html:'<span aria-hidden="true" style="display:block;margin:4px;width:13px;height:13px;background:'+colors[condition]+';border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px #273a3055"></span>',iconSize:[size,size],iconAnchor:[size/2,size/2]});
+}
+function ensureRivals(now) {
+  const ids = [...trees.values()].sort((a,b) => hash('equipo/' + a.id)-hash('equipo/' + b.id));
+  if (state.seededRivals || ids.length < 3) return;
+  const picks = Math.min(6,Math.max(2,Math.floor(ids.length/4)));
+  const available = ids.filter(tree => status(tree.id,now) === 'libre');
+  for (const [index,tree] of available.slice(0,picks).entries()) {
+    takeTree(tree.id,index%2 ? 'abedul' : 'haya',now);
+    state.trees[tree.id].until = now + [3,4,5,6,2,7][index]*DAY;
+  }
+  state.seededRivals = true;
+}
+function installCatalog(data) {
+  const parsed = parseOverpass(data);
+  const wasEmpty = !trees.size;
+  // Conserva los árboles que forman parte de la partida si OSM elimina su nodo.
+  const previous = trees;
+  outline = parsed.outline;
+  trees = new Map(parsed.catalog.map(tree=>[tree.id,tree]));
+  for (const id of new Set([...Object.keys(state.discoveries),...Object.keys(state.trees),...Object.keys(state.challenges)])) {
+    const known = previous.get(id) || state.discoveries[id]?.tree || state.trees[id]?.tree;
+    if (known && !trees.has(id)) trees.set(id,known);
+  }
+  if (selected && !trees.has(selected)) selected = null;
+  // La selección diaria usa el catálogo actual, excluyendo fichas históricas.
+  liveCatalog = parsed.catalog;
+  radar.key = '';
+  ensureRivals(Date.now());
+  if (locationFix && inside !== inPark(locationFix)) setLocation(locationFix.lat,locationFix.lng,locationFix.accuracy);
+  rebuildMarkers();
+  if (wasEmpty && !locationFix) fitPark();
+}
+let liveCatalog = [];
+async function loadTrees(force = false) {
+  if (loading) return;
+  if (!force && state.cache?.data && Date.now()-state.cache.fetchedAt < CACHE_AGE) {
+    setMapStatus(catalogMessage('Datos de OpenStreetMap guardados'),false);
+    return;
+  }
+  loading = true;
+  setMapStatus(trees.size ? catalogMessage('Actualizando con Overpass…') : 'Buscando árboles en OpenStreetMap…',false);
+  const query = '[out:json][timeout:12];(node["natural"="tree"](' + BOX.join(',') + ');relation(12532311););out geom;';
+  for (const endpoint of ENDPOINTS) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(),9000);
+    try {
+      const response = await fetch(endpoint + '?data=' + encodeURIComponent(query),{signal:controller.signal});
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      const data = await response.json();
+      if (data.remark || !Array.isArray(data.elements) || !parseOverpass(data).catalog.length) throw new Error('Catálogo vacío o incompleto');
+      state.cache = {data,fetchedAt:Date.now()};
+      installCatalog(data);
+      save();
+      setMapStatus(catalogMessage('OpenStreetMap · Overpass'),false);
+      loading = false;
+      render();
+      return;
+    } catch {
+      // Pasa al siguiente servidor y conserva la copia local si ambos fallan.
+    } finally { clearTimeout(timeout); }
+  }
+  loading = false;
+  setMapStatus(trees.size ? catalogMessage('Copia de OpenStreetMap · Overpass no disponible') : 'No se pudieron cargar los árboles.',true);
+}
+function catalogMessage(prefix) {
+  return prefix + ' · ' + liveCatalog.length + ' árboles' + (liveCatalog.some(tree=>tree.height !== null) ? '' : ' · sin alturas registradas');
+}
+function setMapStatus(message, retry) {
+  $('map-status').textContent = map ? message : 'No se cargó Leaflet. Recarga la página con conexión.';
+  $('reload-trees').hidden = !retry || !map;
+}
+function remaining(ms) {
+  const seconds = Math.max(0,Math.ceil(ms/1000));
+  return Math.floor(seconds/60) + ':' + String(seconds%60).padStart(2,'0');
+}
+function duration(ms) {
+  const minutes = Math.floor(ms/60000);
+  return minutes >= 60 ? Math.floor(minutes/60) + ' h ' + minutes%60 + ' min' : minutes + ' min';
+}
+function challengeText(challenge,now) {
+  return (challenge.direction === 'in' ? 'Te reta ' : 'Has retado a ') + TEAMS[challenge.rival] + ' · ' + remaining(challenge.ends-now);
+}
+function teamStatus(id,now) {
+  const condition = status(id,now);
+  const record = state.trees[id];
+  if (condition === 'libre') return 'Libre';
+  return (condition === 'seco' ? 'Seco · ' : '') + TEAMS[record.owner];
+}
+function treeMeta(tree) {
+  return TIERS[tree.tier].name + ' · ' + (tree.height === null ? 'Altura sin registrar' : number.format(tree.height) + ' m') +
+    (tree.genus ? ' · Género ' + tree.genus : '');
+}
+function actionButton(action,id,label,message = '') {
+  return '<button type="button" class="primary" data-action="'+action+'" data-id="'+html(id)+'"' +
+    (message ? ' disabled title="'+html(message)+'"' : '') + '>'+html(label)+'</button>';
+}
+function treeActions(tree,now,includePhoto = false) {
+  const id = tree.id;
+  const record = state.trees[id];
+  const condition = status(id,now);
+  const buttons = [], hints = [];
+  function add(action,label) {
+    const reason = restriction(action,tree,now);
+    buttons.push(actionButton(action,id,label,reason));
+    if (reason && !hints.includes(reason)) hints.push(reason);
+  }
+  if (includePhoto && !state.discoveries[id]) add('discover','Hacer foto');
+  if (condition === 'libre') add('claim','Reclamar · ' + TIERS[tree.tier].price + ' Savia');
+  else if (record.owner === 'roble') {
+    if (state.challenges[id]?.direction === 'in') add('defend','Defender');
+    add('care','Cuidar');
+    if (record.level < LEVELS.length && cardCount(tree.cardKey) >= 3) add('level','Subir nivel · 3 cartas');
+  } else if (!state.challenges[id]) add('challenge','Retar · ' + duelPrice(tree,now) + ' Savia');
+  return (buttons.length ? '<div class="actions">'+buttons.join('')+'</div>' : '') +
+    (hints.length ? '<p class="hint">'+html(hints.join(' '))+'</p>' : '');
+}
+function drawPanel(id,markup) {
+  if (lastPaint[id] === markup) return;
+  lastPaint[id] = markup;
+  // Mantiene el foco en el mismo botón cuando cambia una cuenta atrás.
+  const panel = $(id);
+  const focus = document.activeElement;
+  const buttons = [...panel.querySelectorAll('button')];
+  const focusedButton = buttons.indexOf(focus);
+  panel.innerHTML = markup;
+  if (focusedButton >= 0) panel.querySelectorAll('button')[focusedButton]?.focus({preventScroll:true});
+}
+function renderMap(now) {
+  const date = dayKey(now);
+  const candidates = awakeCandidates(date);
+  const nearest = locationFix ? Math.min(...candidates.map(tree=>meters(locationFix,tree))) : Infinity;
+  const heat = nearest < 45 ? 'caliente' : nearest < 110 ? 'templado' : 'frío';
+  const radarEl = $('radar');
+  radarEl.dataset.heat = candidates.length && locationFix ? heat : '';
+  radarEl.textContent = !liveCatalog.length ? 'Radar · esperando árboles' : !candidates.length ? 'Radar · encontrados por hoy' :
+    !locationFix ? 'Radar · esperando ubicación' : 'Radar · ' + heat;
+  const positionText = gpsText + (locationFix ? ' · ' + (inside ? 'dentro del parque' : 'fuera del parque') : '');
+  if ($('gps-status').textContent !== positionText) $('gps-status').textContent = positionText;
+  $('position-mode').textContent = mode === 'test' ? 'Activar GPS' : 'Modo prueba';
+  for (const [id,item] of markerById) {
+    const condition = status(id,now);
+    if (item.condition !== condition) {
+      item.marker.setIcon(treeIcon(condition));
+      item.condition = condition;
+    }
+    const el = item.marker.getElement();
+    if (el) {
+      el.setAttribute('role','button');
+      const label = trees.get(id).label + ' · ' + teamStatus(id,now);
+      if (el.getAttribute('aria-label') !== label) el.setAttribute('aria-label',label);
+    }
+  }
+  const tree = trees.get(selected);
+  $('tree-detail').hidden = !tree;
+  $('map-overview').hidden = !!tree;
+  if (!tree) return;
+  const distance = distanceTo(tree);
+  const rec = state.trees[tree.id];
+  const challenge = state.challenges[tree.id];
+  const condition = status(tree.id,now);
+  drawPanel('tree-detail',
+    '<div class="row tree-heading"><div><h3>'+html(tree.label)+'</h3><small>'+html(treeMeta(tree))+'</small></div>' +
+    '<button type="button" class="close" data-action="close" aria-label="Cerrar ficha">Cerrar</button></div>' +
+    '<p class="hint">'+html(teamStatus(tree.id,now))+(condition === 'libre' ? '' : ' · '+vitality(rec,now)+' de 7 días') +
+    (Number.isFinite(distance) ? ' · '+number.format(Math.floor(distance * 10)/10)+' m' : '')+'</p>' +
+    (challenge ? '<p><strong>'+html(challengeText(challenge,now))+'</strong></p>' : '') + treeActions(tree,now,true));
+}
+function renderHerbarium() {
+  const grouped = new Map();
+  for (const {fecha,tree} of Object.values(state.discoveries)) {
+    const key = tree.species ? tree.cardKey : tree.genus ? 'genero:' + tree.genus.toLowerCase() : 'sin-identificar';
+    const label = tree.species || tree.genus && 'Género '+tree.genus || tree.label;
+    if (!grouped.has(key)) grouped.set(key,{label,items:[]});
+    grouped.get(key).items.push({fecha,tree});
+  }
+  const entries = [...grouped.values()].map(group =>
+    '<article class="entry"><h3>'+html(group.label)+' · '+group.items.length+'</h3>' +
+    group.items.map(({fecha,tree})=>'<p class="hint">OSM '+html(tree.id)+' · '+html(treeMeta(tree))+' · '+html(fullDate.format(new Date(fecha)))+'</p>').join('')+
+    '</article>').join('');
+  const cards = Object.entries(state.cards).flatMap(([key,stack]) => Object.entries(stack.variants).map(([variant,count]) =>
+    '<article class="tile '+(variant === 'normal' ? '' : 'rare')+'"><strong>'+html(stack.label)+'</strong><small>' +
+    html(VARIANTS[variant])+' · ×'+count+'</small>'+(variant === 'especial' ? '' :
+    '<small>'+cardCount(key)+' disponibles para subir nivel</small>')+'</article>')).join('');
+  drawPanel('herbarium','<h2>Herbario</h2><p class="hint">'+Object.keys(state.species).length+' especies identificadas · '+Object.keys(state.discoveries).length+
+    ' árboles descubiertos</p><div class="entries">'+(entries || '<p>Haz una foto junto a un árbol para añadirlo a tu herbario.</p>')+
+    '</div><h3>Cartas</h3>'+(cards ? '<div class="cards">'+cards+'</div>' : '<p class="hint">Descubre o cuida un árbol para ganar una carta.</p>'));
+}
+function renderMyTrees(now) {
+  const list = [...trees.values()].filter(tree => state.trees[tree.id]?.owner === 'roble' && status(tree.id,now) !== 'libre');
+  const entries = list.map(tree => {
+    const record = state.trees[tree.id];
+    const days = vitality(record,now);
+    const challenge = state.challenges[tree.id];
+    return '<article class="entry"><h3>'+html(tree.label)+'</h3><p class="hint">'+html(treeMeta(tree))+
+      '</p><p><strong>'+LEVELS[record.level-1]+'</strong> · '+(days ? days+' de 7 días de vitalidad' : 'Seco · queda libre en '+duration(record.until+3*DAY-now))+
+      '</p><progress max="7" value="'+days+'" aria-label="Vitalidad"></progress>'+
+      (challenge ? '<p><strong>'+html(challengeText(challenge,now))+'</strong></p>' : '')+
+      '<button type="button" class="secondary" data-action="show" data-id="'+html(tree.id)+'">Ver en mapa</button>'+treeActions(tree,now)+'</article>';
+  }).join('');
+  const outgoing = Object.entries(state.challenges).filter(([,challenge])=>challenge.direction === 'out')
+    .map(([id,challenge])=>'<article class="entry"><h3>'+html(trees.get(id)?.label || 'Árbol '+id)+'</h3><p>'+html(challengeText(challenge,now))+
+      '</p><button type="button" class="secondary" data-action="show" data-id="'+html(id)+'">Ver en mapa</button></article>').join('');
+  drawPanel('my-trees','<div class="row"><h2>Mis árboles</h2><strong>'+ownedCount(now)+' / '+MAX_TREES+' árboles</strong></div>'+
+    (entries || '<p class="hint">Reclama un árbol libre desde el mapa para hacerte su guardián.</p>')+
+    '<div class="entries"><h3>Retos que has iniciado</h3>'+(outgoing || '<p class="hint">Sin retos salientes.</p>')+'</div>');
+}
+function renderProfile(now) {
+  const points = pointsAt(now);
+  const teams = Object.entries(TEAMS).map(([id,team]) => '<article class="tile"><strong>'+team+'</strong><small>'+
+    number.format(state.points[id])+' pts acumulados</small><small>+'+number.format(points[id])+' pts hoy</small></article>').join('');
+  const stats = state.stats;
+  const impact = Math.floor(stats.spent/200);
+  const totals = state.daily.date === dayKey(now) ? state.daily : {timeSavia:0,discoverySavia:0};
+  const rows = [['Savia ganada',stats.earned],['Savia gastada',stats.spent],['Árboles descubiertos',Object.keys(state.discoveries).length],
+    ['Km andados',new Intl.NumberFormat('es-ES',{maximumFractionDigits:3}).format(stats.meters/1000)],
+    ['Tiempo en el parque',duration(stats.parkMs)],['Retos ganados',stats.wins],['Retos perdidos',stats.losses]];
+  drawPanel('profile','<h2>Perfil y estadísticas</h2><p class="hint">Tu equipo es Roble.</p><div class="teams">'+teams+
+    '</div><article class="entry"><h3>Has ayudado a plantar '+number.format(impact)+' '+(impact === 1 ? 'árbol' : 'árboles')+
+    '</h3><p class="hint">Forestry France · impacto simulado</p><progress max="200" value="'+stats.spent%200+
+    '" aria-label="Progreso de Savia hacia el siguiente árbol"></progress><small>'+stats.spent%200+' de 200 Savia gastada hacia el siguiente árbol</small></article>'+
+    '<div class="stats">'+rows.map(([label,value])=>'<article class="tile"><small>'+html(label)+'</small><strong>'+html(typeof value === 'number' ? number.format(value) : value)+'</strong></article>').join('')+
+    '</div><p class="ref-line">Hoy: '+totals.timeSavia+' / 12 Savia por tiempo y '+totals.discoverySavia+
+    ' / 20 por descubrir árboles. Día del juego: hora de Oxford. El tiempo cuenta mientras la página está visible.</p>'+
+    '<button type="button" class="secondary" data-action="export">Exportar datos (JSON)</button>');
+}
+function render(now = Date.now()) {
+  $('wallet').textContent = number.format(state.savia)+' Savia';
+  const alert = Object.values(state.challenges).filter(challenge=>challenge.direction === 'in').sort((a,b)=>a.ends-b.ends)[0];
+  $('duel-banner').hidden = !alert;
+  if (alert) $('duel-banner').textContent = challengeText(alert,now) + ' · Mis árboles';
+  if (activeTab === 'mapa') renderMap(now);
+  else if (activeTab === 'herbario') renderHerbarium();
+  else if (activeTab === 'arboles') renderMyTrees(now);
+  else renderProfile(now);
+}
+function showTab(tab) {
+  activeTab = tab;
+  for (const button of document.querySelectorAll('nav [role=tab]')) {
+    const on = button.id === 'tab-'+tab;
+    button.setAttribute('aria-selected',on);
+    button.tabIndex = on ? 0 : -1;
+    $(button.getAttribute('aria-controls')).hidden = !on;
+  }
+  if (tab === 'mapa' && map) map.invalidateSize({pan:false});
+  render();
+}
+function exportData() {
+  tick();
+  save();
+  const data = JSON.stringify({juego:'Forestrix',parque:'University Parks, Oxford',exportado:new Date().toISOString(),...state},null,2);
+  const url = URL.createObjectURL(new Blob([data],{type:'application/json'}));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'forestrix-'+dayKey(Date.now())+'.json';
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url),30000);
+}
+function openPhoto(id) {
+  const tree = trees.get(id);
+  const now = tick();
+  const block = !tree || restriction('discover',tree,now);
+  if (block) { if (tree) notify(block); return; }
+  photoTree = id;
+  const picker = $('camera');
+  picker.value = '';
+  picker.click();
+}
+$('camera').addEventListener('change',event => {
+  const id = photoTree;
+  photoTree = null;
+  if (id && event.target.files.length) act('discover',id);
+  event.target.value = '';
+});
+$('camera').addEventListener('cancel',() => { photoTree = null; });
+$('position-mode').addEventListener('click',() => setMode(mode === 'test' ? 'gps' : 'test'));
+$('duel-banner').addEventListener('click',() => showTab('arboles'));
+$('reload-trees').addEventListener('click',() => loadTrees(true));
+$('locate').addEventListener('click',() => {
+  if (map && locationFix) map.setView([locationFix.lat,locationFix.lng],Math.max(16,map.getZoom()));
+  else fitPark();
+});
+document.addEventListener('click',event => {
+  const button = event.target.closest('button[data-action], nav button');
+  if (!button) return;
+  if (button.matches('nav button')) { showTab(button.id.slice(4)); return; }
+  const {action,id} = button.dataset;
+  if (action === 'close') { selected = null; render(); }
+  else if (action === 'export') exportData();
+  else if (action === 'discover') openPhoto(id);
+  else if (action === 'show') {
+    const tree = trees.get(id);
+    if (!tree) return;
+    selected = id;
+    showTab('mapa');
+    map?.setView([tree.lat,tree.lng],Math.max(17,map.getZoom()));
+  } else act(action,id);
+});
+document.querySelector('nav').addEventListener('keydown',event => {
+  const buttons = [...document.querySelectorAll('nav button')];
+  const index = buttons.indexOf(event.target);
+  const destination = {ArrowLeft:(index+buttons.length-1)%buttons.length,ArrowRight:(index+1)%buttons.length,Home:0,End:buttons.length-1}[event.key];
+  if (index < 0 || destination === undefined) return;
+  event.preventDefault();
+  showTab(buttons[destination].id.slice(4));
+  buttons[destination].focus();
+});
+document.addEventListener('visibilitychange',() => {
+  const now = Date.now();
+  if (document.hidden) save();
+  else {
+    lastTick = now;
+    walkAnchor = null;
+    render(tick(now));
+  }
+});
+initMap();
+if (state.cache?.data || SNAPSHOT) {
+  installCatalog(state.cache?.data || SNAPSHOT);
+  setMapStatus(catalogMessage(state.cache?.data ? 'Datos de OpenStreetMap guardados' : 'Copia de OpenStreetMap'),false);
+}
+tick();
+showTab('mapa');
+const previousTestPosition = state.testPosition;
+setMode(mode);
+if (mode === 'test' && previousTestPosition) setLocation(previousTestPosition.lat,previousTestPosition.lng);
+loadTrees();
+setInterval(() => render(tick()),1000);
+</script>
+</body>
+</html>
