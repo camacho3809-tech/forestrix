@@ -3,10 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#17382b">
+<meta name="theme-color" content="#203f32">
 <title>Forestrix · University Parks</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Fredoka:wght@500;600;700&amp;display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" integrity="sha256-YU3qCpj/P06tdPBJGPax0bm6Q1wltfwjsho5TR4+TYc=" crossorigin="anonymous">
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" integrity="sha256-Hk4dIpcqOSb0hZjgyvFOP+cEmDXUKKNE/tT542ZbNQg=" crossorigin="anonymous"></script>
 <style>
   :root{color-scheme:light;--pine:#17382b;--green:#235e43;--ink:#162b21;--muted:#496354;--paper:#f6f8f1;--line:#dce5d8;--white:#fff;--free:#59615e;--mine:#227847;--rival:#ad332e;--dry:#855331;--gold:#ffdf91}
   *{box-sizing:border-box}
@@ -66,10 +71,6 @@
   #duel-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 12px;background:#ffe5c9;color:#642b16;font-weight:700}
   #duel-banner button{flex-shrink:0}
   #tile-warning{position:absolute;top:10px;left:52px;right:10px;z-index:1;width:fit-content;max-width:calc(100% - 62px);padding:6px 9px;border:1px solid #c89447;border-radius:8px;background:#fff5dd;color:#632f06;font-size:12px;pointer-events:none}
-  .tree-dot{display:block;width:13px;height:13px;border:2px solid white;border-radius:50%;background:var(--dot);box-shadow:0 0 0 1px #263a31a0}
-  .tree-dot.notable{border-radius:2px}
-  .tree-dot.remarcable{border-radius:2px;transform:rotate(45deg);box-shadow:0 0 0 2px #91600b}
-  .tree-icon .tree-dot{margin:4px}
   .legend-tier{margin-top:6px}
   .legend-tier span{display:inline-flex;align-items:center;gap:5px}
   .legend-tier span::before{display:none}
@@ -106,14 +107,187 @@
   .species-facts li+li{margin-top:4px}
   #storage-error{background:#fff0d6;color:#5e3100;text-align:center;font-size:12px;padding:3px 8px}
   @media(min-width:650px){.cards,.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.map-toolbar,#map-bottom{padding-left:18px;padding-right:18px}}
+  :root {
+    --pine:#193e32; --green:#276448; --ink:#183b2f; --muted:#496555;
+    --paper:#f4efd9; --line:#d8d6af; --white:#fffbee;
+    --gold:#ffda78; --free:#657260; --mine:#279749; --rival:#903e79; --dry:#88634b;
+    --game-display:"Fredoka",system-ui,sans-serif;
+  }
+  body{font-family:"DM Sans",system-ui,sans-serif;background:#eadfbe}
+  h1,h2,h3,#profile h4,button,#wallet,.radar-label,nav{font-family:var(--game-display)}
+  h1,h2,h3{letter-spacing:0;font-weight:650}
+  h1{font-size:30px;line-height:.96;color:#fff5cd}
+  h2{font-size:26px}
+  h3{font-size:19px}
+  button{font-weight:600;touch-action:manipulation}
+  button:focus-visible,a:focus-visible{outline:3px solid #167cb0;outline-offset:3px}
+  header{padding:calc(10px + env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) 11px max(14px,env(safe-area-inset-left));border-bottom:3px solid #122f25;background:radial-gradient(ellipse at 27% 0,#32644a 0,transparent 75%),#203f32}
+  header small{color:#e0e9c8;font-size:11px;font-weight:650;line-height:1.2;display:block;margin-top:4px}
+  .brand{display:flex;align-items:center;gap:9px}
+  .brand-token{color:#fff0ae;width:41px;height:41px;flex-shrink:0;display:grid;place-items:center;background:linear-gradient(#579e60,#2b6749);border:2px solid #9fbd75;border-radius:13px;box-shadow:inset 0 1px 0 #e7f3a57a,0 3px 0 #112a22}
+  .brand-token .ui-icon{width:26px;height:26px}
+  .ui-icon{display:block;width:21px;height:21px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  #wallet{display:flex;align-items:center;gap:6px;white-space:nowrap;font-size:18px;font-weight:650;line-height:1.05;border:1px solid #a68744;border-radius:16px;background:linear-gradient(#42533b,#273f30);padding:7px 9px;color:#ffe18e;box-shadow:inset 0 1px 0 #fff0a240,0 3px 0 #152f24;font-variant-numeric:tabular-nums}
+  #wallet .ui-icon{width:20px;height:24px;color:#ffd572;fill:#d99335}
+  #wallet.balance-bump{animation:balance-bump .34s ease-out}
+  @keyframes balance-bump{45%{transform:scale(1.12)}}
+  #panel-mapa{background:#d1dfa2}
+  .map-toolbar{gap:12px;padding:7px 12px;background:linear-gradient(#fff9df,#f4edcb);border-bottom:1px solid #d5d7ab}
+  .radar-block{display:flex;align-items:center;gap:8px;min-width:0}
+  .radar-dial{width:34px;height:34px;display:grid;place-items:center;flex-shrink:0;border:2px solid #81ac75;border-radius:50%;color:#e4ffbe;background:#194731;box-shadow:inset 0 0 0 3px #30634b}
+  .radar-dial .ui-icon{width:20px;height:20px;transform-origin:center;animation:sweep 6s linear infinite}
+  @keyframes sweep{to{transform:rotate(360deg)}}
+  #radar{font-size:14px;line-height:1.1}
+  #gps-status{display:block;margin-top:3px;font-size:11px;line-height:1.15}
+  .radar-meter{display:flex;gap:3px;margin-top:4px;max-width:92px}
+  .radar-meter i{height:4px;flex:1;background:#d1d9b7;border-radius:10px;transition:background-color .24s,opacity .24s}
+  [data-signal="frío"] .radar-meter i:first-child{background:#3d85aa}
+  [data-signal="templado"] .radar-meter i:nth-child(-n+2){background:#b56e14}
+  [data-signal="caliente"] .radar-meter i{background:#cf5434}
+  .recommendation{padding:7px 12px;background:linear-gradient(110deg,#dceabf,#eef2d3);border-block:0;border-bottom:2px solid #748f58;color:#29422c}
+  .recommendation h2{color:#3b5c3c;font-size:12px;font-weight:650;line-height:1.1}
+  .recommendation p{line-height:1.25;margin-top:2px}
+  .recommendation .secondary{min-height:38px;padding:5px 9px}
+  .map-wrap,#map{background:#d2dea3}
+  #map .leaflet-tile-pane{filter:saturate(1.45) sepia(.16) contrast(.97) brightness(1.015)}
+  #map .leaflet-control-attribution{font-size:9px;background:#fffbeaeb;color:#2d493a;border-radius:6px 0 0 0}
+  #map .leaflet-control-attribution a{color:#224d3d}
+  #map .leaflet-control-zoom{border:1px solid #a1a980;border-radius:10px;overflow:hidden;box-shadow:0 3px 0 #243d3b45}
+  #map .leaflet-control-zoom a{width:35px;height:35px;line-height:35px;background:#fff8da;color:#2c583c}
+  #map .leaflet-control-zoom a:hover{background:#f6e7b1}
+  #map .leaflet-interactive:focus-visible{outline:2px solid #1476a1;outline-offset:0;border-radius:9px}
+  #locate{display:flex;align-items:center;gap:6px;bottom:22px;border-radius:13px}
+  #locate .ui-icon{width:17px;height:17px}
+  .park-glow{filter:drop-shadow(0 0 3px #dcff8a);animation:park-breathe 3.8s ease-in-out infinite}
+  @keyframes park-breathe{50%{opacity:.53}}
+  .tree-icon,.tree-cluster,.explorer-icon{background:transparent;border:none}
+  .tree-glyph{position:relative;display:block;width:100%;height:100%;color:var(--crown);pointer-events:none}
+  .tree-art{position:absolute;display:block;left:50%;bottom:3px;width:var(--tree-size);height:var(--tree-size);margin-left:calc(var(--tree-size) / -2);overflow:visible;transform-origin:50% 91%;animation:sway var(--period,4.6s) ease-in-out var(--phase,0s) infinite}
+  .tree-glyph.comun{--tree-size:32px}
+  .tree-glyph.notable{--tree-size:41px}
+  .tree-glyph.remarcable{--tree-size:47px}
+  @keyframes sway{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
+  .tree-halo,.wake-aura{position:absolute;left:50%;bottom:8px;width:31px;height:31px;margin-left:-15px;border:2px solid #f5ffd298;border-radius:50%;background:#ecffb533;box-shadow:0 0 7px #ecffb58a}
+  .notable .tree-halo{width:39px;height:39px;margin-left:-19px;bottom:6px}
+  .remarcable .tree-halo{width:44px;height:44px;margin-left:-22px;bottom:7px;border-color:#ffe282;box-shadow:0 0 10px #ffc857f5, inset 0 0 8px #ffd76399;background:#ffe86b52}
+  .wake-aura{width:44px;height:44px;margin-left:-22px;border-color:#fbf6bd;box-shadow:0 0 8px #f6ffbe;animation:ground-pulse 2.1s ease-out infinite}
+  .tree-spark{position:absolute;color:#fff0a2;text-shadow:0 0 5px #b16b08;font-size:15px;line-height:1;animation:glint 2.6s ease-in-out var(--phase,0s) infinite}
+  .tree-spark.a{left:0;bottom:38%}.tree-spark.b{right:2px;bottom:68%;animation-delay:calc(var(--phase,0s) - .9s)}
+  @keyframes glint{0%,100%{transform:translateY(2px) scale(.7);opacity:.62}50%{transform:translateY(-4px) scale(1.18);opacity:1}}
+  .cluster-bubble{display:grid;place-items:center;width:100%;height:100%;border:2px solid #f1f9b7;border-radius:50%;background:radial-gradient(circle at 33% 22%,#88ba59,#397a49 67%,#255d40);color:#fffad5;text-shadow:0 2px 1px #284f31;font:650 17px/1 var(--game-display);box-shadow:0 0 0 3px #304c3b7a,0 5px 8px #20352d65}
+  .cluster-bubble small{color:#fff6c8;font:650 9px/1 "DM Sans",sans-serif;margin-top:-6px}
+  .cluster-bubble.awake{border-color:#fff1a2;box-shadow:0 0 0 3px #fcf2a9bd,0 4px 8px #20352d65}
+  .explorer-shell{position:relative;width:100%;height:100%;pointer-events:none}
+  .explorer-shell svg{width:42px;height:49px;position:absolute;left:8px;top:1px;overflow:visible;filter:drop-shadow(0 2px 2px #1734297c)}
+  .explorer-radar{position:absolute;left:18px;bottom:0;width:22px;height:22px;border:2px solid #fff5ab;background:#fff39a36;border-radius:50%;animation:ground-pulse 2.6s ease-out infinite}
+  .explorer-radar.echo{animation-delay:1.3s}
+  [data-signal="caliente"] .explorer-radar{border-color:#ffb057;animation-duration:1.45s}
+  [data-signal="caliente"] .explorer-radar.echo{animation-delay:.73s}
+  @keyframes ground-pulse{0%{transform:scale(.55);opacity:.9}100%{transform:scale(1.8);opacity:0}}
+  #map-bottom{padding:8px 12px;background:#fff7db;border-top:2px solid #a5ae73;max-height:min(36dvh,225px)}
+  #map-status{font-size:11px;line-height:1.25}
+  #reload-trees{min-height:34px;font-size:12px;padding:5px 8px}
+  .legend{gap:4px 11px;font-size:11px;font-weight:680}
+  .legend span::before{width:9px;height:9px;box-shadow:0 0 0 1px #293b3055}
+  .legend-tier{margin-top:4px}
+  .legend-tier span::before{display:none}
+  .legend-tree{width:14px;height:15px}
+  .legend-tree.notable{width:17px;height:19px;filter:drop-shadow(0 0 2px #79a143)}
+  .legend-tree.remarcable{width:19px;height:20px;color:#e9a83f;filter:drop-shadow(0 0 2px #ffce62)}
+  #tree-detail{background:linear-gradient(145deg,#fffae7,#f5edce);padding:8px 10px;border:1px solid #d9d5a4;border-radius:15px;box-shadow:inset 0 1px 0 #fff,0 2px 0 #d3c798}
+  #tree-detail.card-arrival{animation:card-arrival .3s cubic-bezier(.2,.78,.27,1) both}
+  @keyframes card-arrival{from{transform:translateY(18px);opacity:.2}to{transform:translateY(0);opacity:1}}
+  button.primary,button.secondary,#position-mode,#locate,.close{border-radius:13px;min-height:44px;font-family:var(--game-display);font-weight:650;transition:transform .13s,box-shadow .13s}
+  button.primary{color:#fffae8;background:linear-gradient(#418b5e,#266346);border:1px solid #235d3e;box-shadow:inset 0 1px 0 #bce8b16b,0 3px 0 #1a4934}
+  button.secondary,#position-mode,#locate,.close{color:#26513b;background:linear-gradient(#fffbee,#f4e8c0);border:1px solid #bfb783;box-shadow:inset 0 1px 0 #fff,0 2px 0 #a69c6f}
+  button:not(:disabled):active:is(.primary,.secondary,#position-mode,#locate,.close){transform:translateY(2px);box-shadow:inset 0 1px 0 #fff4}
+  button.primary:disabled{box-shadow:none}
+  #duel-banner{background:linear-gradient(90deg,#ffdb9d,#f9e9b5);border-bottom:2px solid #ca9858;color:#6d3222}
+  .screen:not(.map-screen){background:radial-gradient(ellipse at 50% 0,#f9f3db,#efe2bb 75%)}
+  .content{padding:17px 14px 22px}
+  .content .entry,.content .tile{border-color:#d7d2a7;border-radius:15px;box-shadow:0 2px 0 #d8c89e;background:#fffae8}
+  .content .rare{background:linear-gradient(143deg,#fff0b4,#fffae1 72%);border-color:#d2a64f}
+  .cards .field-card{min-height:112px;padding-top:38px;position:relative;perspective:550px}
+  .field-card .card-emblem{position:absolute;top:8px;left:10px;width:25px;height:25px;color:#5b8252}
+  .field-card.rare .card-emblem{color:#aa6b19}
+  .field-card.card-flip{transform-origin:center;animation:card-flip .52s cubic-bezier(.23,.7,.29,1) backwards;animation-delay:var(--card-delay,0ms)}
+  @keyframes card-flip{from{transform:perspective(480px) rotateY(-88deg) scale(.88);opacity:0}to{transform:perspective(480px) rotateY(0) scale(1);opacity:1}}
+  nav{gap:3px;padding-top:5px;padding-bottom:calc(5px + env(safe-area-inset-bottom));background:linear-gradient(#295542,#1b4033);border-top:3px solid #a9bc79;box-shadow:0 -3px 8px #283e3225}
+  nav button{display:flex;align-items:center;flex-direction:column;justify-content:center;gap:1px;min-height:52px;padding:3px 1px;color:#dfebc8;border:1px solid transparent;border-radius:13px;font-weight:550;font-size:12px}
+  nav button .ui-icon{width:22px;height:22px}
+  nav button[aria-selected="true"]{border:1px solid #dacf97;color:#28503b;background:linear-gradient(#fff4c8,#e8d79d);box-shadow:0 2px 0 #a3915e}
+  nav button:active{transform:translateY(2px)}
+  #notice{border:1px solid #a8ae6f;border-radius:14px;background:#213d31;box-shadow:0 3px 0 #172b24;color:#fff4cc}
+  dialog{box-shadow:0 8px 0 #1c352e5a,0 18px 35px #15322473}
+  #species-dialog,#tutorial-dialog,#opinion-dialog{border:2px solid #b6bb7d;border-radius:20px;background:linear-gradient(#fff9e3,#f8efcf)}
+  #map-effects{position:absolute;inset:0;z-index:2;overflow:hidden;pointer-events:none}
+  .map-fx{position:absolute;width:0;height:0;pointer-events:none}
+  .fx-particle{position:absolute;width:9px;height:14px;border-radius:85% 25% 85% 25%;background:var(--fx-color);box-shadow:inset -1px -1px 0 #17372245;animation:particle .78s cubic-bezier(.13,.64,.39,1) both;animation-delay:var(--fx-delay)}
+  .fx-particle.water{border-radius:70% 55% 65% 65%;width:8px;height:11px}
+  @keyframes particle{from{transform:translate(-4px,-5px) scale(.65);opacity:1}70%{opacity:.98}to{transform:translate(var(--fx-x),var(--fx-y)) rotate(var(--fx-rotate)) scale(.35);opacity:0}}
+  .fx-earned,.fx-flag{position:absolute;left:0;bottom:4px;transform:translate(-50%,0);white-space:nowrap;color:#fff1a2;font:650 21px/1 var(--game-display);text-shadow:0 2px 0 #234332,1px 0 #234332,-1px 0 #234332;animation:float-reward 1.3s ease-out both}
+  .fx-flag{font-size:32px;color:#d6ffc0;animation:plant-flag .75s cubic-bezier(.22,.75,.35,1) both}
+  .fx-flag .ui-icon{width:35px;height:35px;fill:#59bf69;stroke:#effbd5;filter:drop-shadow(0 2px 2px #18382a)}
+  @keyframes float-reward{0%{transform:translate(-50%,0) scale(.85);opacity:0}16%{opacity:1}76%{opacity:1}100%{transform:translate(-50%,-52px) scale(1.07);opacity:0}}
+  @keyframes plant-flag{0%{transform:translate(-50%,-40px) scale(.65);opacity:0}37%{transform:translate(-50%,4px) scale(1.13);opacity:1}64%{transform:translate(-50%,0);opacity:1}100%{transform:translate(-50%,0);opacity:0}}
+  .tree-art.tree-claimed{animation:tree-claimed .55s ease-out both}
+  @keyframes tree-claimed{35%{transform:scale(.78,1.22)}64%{transform:scale(1.16,.88)}}
+  #result-screen{position:fixed;inset:0;display:grid;place-items:center;background:#102a2372;z-index:8;pointer-events:none}
+  .result-card{width:min(338px,86vw);padding:20px 14px;text-align:center;color:#fff6d2;background:linear-gradient(#3c8959,#1d5844);border:3px solid #ead48a;border-radius:23px;box-shadow:0 5px 0 #183d32,0 0 40px #edda843b;animation:card-arrival .36s both}
+  #result-screen[data-outcome="perdido"] .result-card{background:linear-gradient(#815476,#553748);border-color:#e4b9ad}
+  .result-card .ui-icon{width:43px;height:43px;margin:0 auto 5px;color:#ffdf8d}
+  #result-title{font:650 40px/.98 var(--game-display);margin-bottom:6px}
+  #result-copy{font-size:14px;font-weight:650}
+  @media(max-width:365px){h1{font-size:26px}.brand-token{width:35px;height:35px}#wallet{font-size:16px}.radar-dial{width:30px;height:30px}.recommendation,.map-toolbar{padding-inline:8px}#map-bottom{padding-inline:8px}.legend{gap:3px 8px}}
+  @media(min-width:650px){.map-toolbar,.recommendation,#map-bottom{padding-inline:18px}nav button{min-height:57px}}
+  @media(prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+    .explorer-radar.echo{display:none}
+  }
 </style>
 </head>
 <body>
+<svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="icon-brand" viewBox="0 0 24 24"><path d="M12 2.1 20.1 5v7.9c0 3.8-3.5 7-8.1 9-4.6-2-8.1-5.2-8.1-9V5L12 2.1Z"/><path d="M8.2 15.6c0-4.8 3.8-7.7 8-7.7.1 4.8-2.4 8.1-6.4 7.8M7.9 17.7l5.5-5.9"/></symbol>
+  <symbol id="icon-savia" viewBox="0 0 24 26"><path d="M12 1.8c-1.7 4.3-7.6 9.4-7.6 14.1a7.6 7.6 0 0 0 15.2 0c0-4.7-5.9-9.8-7.6-14.1Z"/><path d="M8 16.7c.2 1.4 1 2.4 2.2 2.9" fill="none"/></symbol>
+  <symbol id="icon-map" viewBox="0 0 24 24"><path d="m3.5 6 5.5-2 6 2 5.5-2v14l-5.5 2-6-2-5.5 2zM9 4v14m6-12v14"/><path d="m4 12 4.2-.6 4.9 2.7 6.6-3.2"/></symbol>
+  <symbol id="icon-book" viewBox="0 0 24 24"><path d="M4 4.5h13.8A2.2 2.2 0 0 1 20 6.7v13H6.4A2.4 2.4 0 0 1 4 17.3zm0 12.1h16M7.4 4.5v12"/><path d="M10 12.8c0-2.7 2.6-4.7 5.3-4.5-.1 2.7-1.9 4.3-4.1 4.3"/></symbol>
+  <symbol id="icon-wood" viewBox="0 0 24 24"><path d="M12 21v-7m0 4 4-3m-4 3-4-3m-1.1 2.3a3.6 3.6 0 0 1-.9-6.9 3.5 3.5 0 0 1 2.1-4.5 4 4 0 0 1 7.6 0 3.5 3.5 0 0 1 2.2 4.5 3.6 3.6 0 0 1-.9 6.9"/></symbol>
+  <symbol id="icon-profile" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20v-1.2a7 7 0 0 1 14 0V20z"/><path d="M3.8 10.1 2.3 8.6m17.9 1.5 1.5-1.5"/></symbol>
+  <symbol id="icon-radar" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.5"/><path d="m12 12 7-7"/><circle cx="12" cy="12" r="1" fill="currentColor"/></symbol>
+  <symbol id="icon-center" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.3"/><path d="M12 2.8v4m0 10.4v4m-9.2-9.2h4m10.4 0h4"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/></symbol>
+  <symbol id="icon-flag" viewBox="0 0 24 24"><path d="M6 22V3m0 1c5.1-4.1 7.3 3.7 13.4-.9v10c-6.1 4.6-8.3-3.2-13.4.9"/><path d="M3 22h10" fill="none"/></symbol>
+  <symbol id="icon-trophy" viewBox="0 0 24 24"><path d="M7 3h10v6a5 5 0 0 1-10 0V3Zm0 2H4v3a3 3 0 0 0 3 3m10-6h3v3a3 3 0 0 1-3 3m-5 3v5m-4 2h8m-6-2h4"/></symbol>
+  <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5.1 3.6 8.3 8 11 4.4-2.7 8-5.9 8-11V5l-8-3Z"/><path d="m9 9 6 6m0-6-6 6"/></symbol>
+  <symbol id="game-tree" viewBox="0 0 50 50">
+    <ellipse cx="25" cy="43.3" rx="17.3" ry="4" fill="#234135" opacity=".25"/>
+    <path d="M18 44c1.9-2.8 2.7-6.4 2.9-12.6h7.8c.2 5.7.9 9.5 3.5 12.7-4.7 1.6-9.7 1.9-14.2-.1Z" fill="#a97042" stroke="#3d472e" stroke-width="1.8"/>
+    <path d="m24 35-1.4 8" stroke="#eabb6a" stroke-width="1.6" stroke-linecap="round"/>
+    <path d="M25 3.1c6.1 0 10.1 3.6 12.5 9.1 5.8 1.4 8.5 6 7.1 11.2 2.9 5.3-.7 11-7 11.2-3.7 4.2-8.3 4.5-12.5 1.8-4.2 2.7-9.3 2.3-12.4-1.8-6.1.3-10-5.7-7.2-10.8-1.5-5.4 1.3-10 7-11.4C14.4 7 18.7 3.1 25 3.1Z" fill="currentColor" stroke="#254735" stroke-width="2.1" stroke-linejoin="round"/>
+    <path d="M11 22c2 4.9 7.7 7.3 13.9 7.3 6.4 0 12.2-2.3 14-7.4-.6 6.2-6.8 10.9-14 11-6.5-.1-12.6-4.5-13.9-10.9Z" fill="#213c2d" opacity=".23"/>
+    <path d="M13.1 17.7c4.2-1.6 2.4-5.1 7.2-6.7 3.1-1.1 6.4-.7 8.9.1 5.5 1.8 3.9 6.4 7.4 7.2-.3-2.3-1.8-3.4-3.4-4.3-1.6-5-4.4-6.8-8.1-6.8-6 0-8.7 3.5-10 7.8-1 .3-2 1.4-2 2.7Z" fill="#fff5d0" opacity=".55"/>
+    <path d="M19.4 20.9c1.1-1.5 3.6-2 5.1-.9m5.3 4.2c1.2-1.4 3.2-1.7 4.8-.6" fill="none" stroke="#fff5d0" opacity=".65" stroke-width="1.4" stroke-linecap="round"/>
+    <ellipse cx="25" cy="44" rx="5.6" ry="2.7" fill="var(--team,currentColor)" stroke="#fff5cf" stroke-width="1.2"/>
+  </symbol>
+  <symbol id="game-explorer" viewBox="0 0 47 55">
+    <ellipse cx="24" cy="48.7" rx="17" ry="4.3" fill="#1b3f34" opacity=".37"/>
+    <path d="M13.2 45.3c-4 2.2-2.1 5.7 2.1 5.4l7.1-.9 4.2.1 6 .8c4.7.5 5.6-3.8 1.4-5.2l-1.8-8.2H16Z" fill="#403d35" stroke="#273d31" stroke-width="1.7"/>
+    <path d="M14.8 28.3c-5.9.1-8.5 4.7-8.2 10.3.2 2.3 2.7 3.6 4.8 2.2l23 .3c2.3 1.3 5.2.1 5.3-2.6.4-5.7-4-10.7-8.8-10.8Z" fill="#e6a856" stroke="#344333" stroke-width="2"/>
+    <path d="M16 28h15.2l5 16.6c-7.8 2.2-17.2 2.3-24.6-.1Z" fill="#428f65" stroke="#344333" stroke-width="2"/>
+    <path d="M17 30.5v11.8m13.8-11.8v11.8" stroke="#f6d187" stroke-width="2" stroke-linecap="round"/>
+    <path d="M23 33c-8.3 0-13-5.6-13-11.8 0-6.4 5.1-10.9 13.3-10.9 8.5 0 13.1 4.5 13.1 11 0 6.1-4.7 11.7-13.4 11.7Z" fill="#f2bc82" stroke="#3f4434" stroke-width="2"/>
+    <path d="M7.6 18.6c-2-2.8.2-4.5 5.1-6.4l1.6-6.2c4.9-4.5 12.4-4.9 18.2-.1l1.6 6c4.9 1.2 7.4 3.4 5.6 5.9-7.6 3.7-24.6 3.9-32.1.8Z" fill="#e0ae62" stroke="#403e2c" stroke-width="2"/>
+    <path d="M13.7 12.3c5.6 2.1 13.5 2 19.4.1" stroke="#795333" stroke-width="3" stroke-linecap="round"/>
+    <path d="M17.5 24.2v1m11.5-1v1m-7.6 3.1c1.1.7 2.7.8 3.8 0" fill="none" stroke="#4b3b2e" stroke-width="1.7" stroke-linecap="round"/>
+    <path d="m19.2 33 4.1 3 4.2-3" fill="none" stroke="#c9533e" stroke-width="3" stroke-linecap="round"/>
+  </symbol>
+</svg>
+
 <div id="app">
   <div>
     <header>
-      <div><h1>Forestrix</h1><small>University Parks, Oxford</small></div>
-      <div id="wallet" aria-label="Tu saldo de Savia">0 Savia</div>
+      <div class="brand"><span class="brand-token"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-brand"></use></svg></span><div><h1>Forestrix</h1><small>University Parks, Oxford</small></div></div>
+      <div id="wallet" aria-label="Tu saldo de Savia"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-savia"></use></svg><span id="wallet-amount">0 Savia</span></div>
     </header>
     <div id="duel-banner" hidden>
       <span id="duel-status"></span>
@@ -124,7 +298,7 @@
   <main>
     <section id="panel-mapa" class="screen map-screen" role="tabpanel" aria-labelledby="tab-mapa">
       <div class="map-toolbar">
-        <div><div id="radar">Radar · esperando ubicación</div><small id="gps-status" aria-live="polite">Buscando GPS…</small></div>
+        <div class="radar-block"><span class="radar-dial"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-radar"></use></svg></span><div><div class="radar-label" id="radar">Radar · esperando ubicación</div><div class="radar-meter" aria-hidden="true"><i></i><i></i><i></i></div><small id="gps-status" aria-live="polite">Buscando GPS…</small></div></div>
         <button id="position-mode" type="button">Modo prueba</button>
       </div>
       <aside class="recommendation" aria-labelledby="recommendation-heading">
@@ -134,7 +308,8 @@
       <div class="map-wrap">
         <div id="map" aria-label="Mapa de University Parks"></div>
         <p id="tile-warning" role="status" hidden>Las teselas del mapa no están disponibles. Se muestra el plano local de calles y senderos.</p>
-        <button id="locate" type="button">Centrar mapa</button>
+        <button id="locate" type="button"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-center"></use></svg>Centrar mapa</button>
+        <div id="map-effects" aria-hidden="true"></div>
       </div>
       <div id="map-bottom">
         <div id="tree-detail" hidden></div>
@@ -143,9 +318,9 @@
             <span style="--dot:var(--free)">Libre</span><span style="--dot:var(--mine)">Mío</span><span style="--dot:var(--rival)">Rival</span><span style="--dot:var(--dry)">Seco</span>
           </div>
           <div class="legend legend-tier" aria-label="Categorías de los árboles">
-            <span><i class="tree-dot" style="--dot:var(--free)"></i>Común</span>
-            <span><i class="tree-dot notable" style="--dot:var(--free)"></i>Notable</span>
-            <span><i class="tree-dot remarcable" style="--dot:var(--free)"></i>Remarcable</span>
+            <span><svg class="legend-tree comun" viewBox="0 0 50 50" aria-hidden="true"><use href="#game-tree"></use></svg>Común</span>
+            <span><svg class="legend-tree notable" viewBox="0 0 50 50" aria-hidden="true"><use href="#game-tree"></use></svg>Notable</span>
+            <span><svg class="legend-tree remarcable" viewBox="0 0 50 50" aria-hidden="true"><use href="#game-tree"></use></svg>Remarcable</span>
           </div>
           <p id="map-status" class="muted" role="status">Buscando árboles en OpenStreetMap…</p>
           <button id="reload-trees" class="secondary" type="button" hidden>Reintentar carga</button>
@@ -157,13 +332,17 @@
     <section id="panel-perfil" class="screen" role="tabpanel" aria-labelledby="tab-perfil" hidden><div class="content" id="profile"></div></section>
   </main>
   <nav role="tablist" aria-label="Pantallas">
-    <button id="tab-mapa" role="tab" aria-controls="panel-mapa" aria-selected="true" type="button">Mapa</button>
-    <button id="tab-herbario" role="tab" aria-controls="panel-herbario" aria-selected="false" type="button">Herbario</button>
-    <button id="tab-arboles" role="tab" aria-controls="panel-arboles" aria-selected="false" type="button">Mis árboles</button>
-    <button id="tab-perfil" role="tab" aria-controls="panel-perfil" aria-selected="false" type="button">Perfil</button>
+    <button id="tab-mapa" role="tab" aria-controls="panel-mapa" aria-selected="true" type="button"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-map"></use></svg><span>Mapa</span></button>
+    <button id="tab-herbario" role="tab" aria-controls="panel-herbario" aria-selected="false" type="button"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-book"></use></svg><span>Herbario</span></button>
+    <button id="tab-arboles" role="tab" aria-controls="panel-arboles" aria-selected="false" type="button"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-wood"></use></svg><span>Mis árboles</span></button>
+    <button id="tab-perfil" role="tab" aria-controls="panel-perfil" aria-selected="false" type="button"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-profile"></use></svg><span>Perfil</span></button>
   </nav>
 </div>
 <div id="notice" role="status" hidden></div>
+<div id="result-screen" role="status" aria-live="polite" hidden><div class="result-card">
+  <div id="result-emblem" aria-hidden="true"></div>
+  <p id="result-title"></p><p id="result-copy"></p>
+</div></div>
 <input id="camera" type="file" accept="image/*" capture="environment" hidden>
 <dialog id="species-dialog" aria-labelledby="species-title">
   <form id="species-form">
@@ -408,9 +587,159 @@ let gpsWatch, gpsGeneration = 0, gpsText = '', locationFix = null, inside = fals
 let visibleSince = document.hidden ? null : Date.now();
 let lastTick = Date.now(), noticeTimer, lastPaint = {}, loading = false;
 const markerById = new Map();
-const colors = {libre:'#59615e', mio:'#227847', rival:'#ad332e', seco:'#855331'};
+const colors = {libre:'#79816a', mio:'#55a44e', rival:'#ad5d99', seco:'#936a4b'};
 const html = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const number = new Intl.NumberFormat('es-ES');
+const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)') || {matches:false};
+const uiIcon = (icon,className = 'ui-icon') =>
+  '<svg class="'+className+'" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-'+icon+'"></use></svg>';
+const outcomes = {ganado:['¡Victoria!','Has ganado el reto.','trophy'],perdido:['Derrota','El rival ha ganado el reto.','shield']};
+let walletAmount = state.savia, walletTarget = state.savia, walletFrame = 0;
+let playerFrame = 0, playerPosition = null, playerDestination = null, interactionRadius;
+let fogLayer, lastFxTimer, lastShownTree = null;
+let clustered = false;
+const shownCards = new Set();
+const activeEffects = new Map();
+const recentClaims = new Map();
+function paintWallet() {
+  if (walletTarget === state.savia && $('wallet-amount').textContent === number.format(walletAmount)+' Savia') return;
+  if (walletTarget === state.savia && walletFrame) return;
+  const target = state.savia;
+  const starting = walletAmount;
+  const oldTarget = walletTarget;
+  walletTarget = target;
+  $('wallet').setAttribute('aria-label','Tu saldo de Savia: '+number.format(target));
+  cancelAnimationFrame(walletFrame);
+  walletFrame = 0;
+  function paint(value) {
+    walletAmount = value;
+    $('wallet-amount').textContent = number.format(value)+' Savia';
+  }
+  if (reducedMotion.matches || target <= starting) {
+    paint(target);
+    return;
+  }
+  if (target > oldTarget) {
+    const wallet = $('wallet');
+    wallet.classList.remove('balance-bump');
+    void wallet.offsetWidth;
+    wallet.classList.add('balance-bump');
+  }
+  const total = Math.min(850,Math.max(260,(target-starting)*19));
+  let began;
+  function step(now) {
+    began ??= now;
+    const progress = Math.min((now-began)/total,1);
+    paint(starting+Math.floor((target-starting)*progress));
+    walletFrame = progress < 1 && !reducedMotion.matches ? requestAnimationFrame(step) : 0;
+    if (!walletFrame) paint(target);
+  }
+  walletFrame = requestAnimationFrame(step);
+}
+function makeClusterIcon(cluster) {
+  const count = cluster.getChildCount();
+  const awake = cluster.getAllChildMarkers().some(marker=>marker.options.foundAwake);
+  const size = count > 25 ? 53 : count > 8 ? 49 : 45;
+  return L.divIcon({className:'tree-cluster',iconSize:[size,size],iconAnchor:[size/2,size/2],
+    html:'<span class="cluster-bubble'+(awake ? ' awake' : '')+'" aria-label="'+count+' árboles">'+count+'<small aria-hidden="true">árboles</small></span>'});
+}
+const PARK_FOG_FRAME = [[-85,-180],[-85,180],[85,180],[85,-180]];
+function addParkEffects() {
+  const shadePane = map.createPane('park-fog');
+  shadePane.style.zIndex = '310';
+  shadePane.style.pointerEvents = 'none';
+  fogLayer = L.polygon([PARK_FOG_FRAME,...outline],{
+    pane:'park-fog',stroke:false,fillColor:'#294a43',fillOpacity:.35,interactive:false
+  }).addTo(map);
+  parkLayer = L.polygon(outline,{
+    className:'park-glow',color:'#ddfa91',weight:3,opacity:.94,fillColor:'#b4db67',
+    fillOpacity:.10,interactive:false,lineCap:'round'
+  }).addTo(map);
+}
+function positionEffects() {
+  for (const [effect,tree] of activeEffects) {
+    const p = map.latLngToContainerPoint([tree.lat,tree.lng]);
+    effect.style.transform = 'translate('+p.x+'px,'+p.y+'px)';
+  }
+}
+function playMapEffect(entry) {
+  if (!map || activeTab !== 'mapa' || document.hidden || reducedMotion.matches) return;
+  const tree = trees.get(entry.id_arbol);
+  if (!tree) return;
+  const effect = document.createElement('div');
+  effect.className = 'map-fx';
+  const isWater = entry.tipo === 'cuidar';
+  const earned = entry.tipo === 'despierto_encontrado' ? 30 : entry.savia;
+  if (entry.tipo === 'reclamar') {
+    const flag = document.createElement('span');
+    flag.className = 'fx-flag';
+    flag.innerHTML = uiIcon('flag');
+    effect.append(flag);
+  } else if (earned > 0 || entry.tipo === 'descubrir') {
+    const text = document.createElement('span');
+    text.className = 'fx-earned';
+    text.textContent = earned > 0 ? '+'+number.format(earned)+' Savia' : 'Árbol descubierto';
+    effect.append(text);
+  }
+  const colors = isWater ? ['#64c7ec','#b7f4ff','#e7fbff'] : ['#8ad46c','#d0e872','#fbd879','#55ad64'];
+  const count = isWater ? 7 : 12;
+  for (let i=0;i<count;i++) {
+    const particle = document.createElement('i');
+    particle.className = 'fx-particle'+(isWater ? ' water' : '');
+    const angle = i * Math.PI * 2 / count;
+    const distance = 21 + 5 * (i%4);
+    particle.style.setProperty('--fx-color',colors[i%colors.length]);
+    particle.style.setProperty('--fx-x',Math.round(Math.cos(angle)*distance)+'px');
+    particle.style.setProperty('--fx-y',Math.round((isWater ? 12 : -14)+Math.sin(angle)*distance)+'px');
+    particle.style.setProperty('--fx-rotate',(i*41)+'deg');
+    particle.style.setProperty('--fx-delay',(i%4)*15+'ms');
+    effect.append(particle);
+  }
+  if (activeEffects.size >= 5) {
+    const previous = activeEffects.keys().next().value;
+    previous.remove();
+    activeEffects.delete(previous);
+  }
+  $('map-effects').append(effect);
+  activeEffects.set(effect,tree);
+  positionEffects();
+  setTimeout(()=>{activeEffects.delete(effect);effect.remove();},1400);
+}
+function playResult(outcome) {
+  if (document.hidden || !outcomes[outcome]) return;
+  const [title,copy,icon] = outcomes[outcome];
+  const screen = $('result-screen');
+  $('result-title').textContent = title;
+  $('result-copy').textContent = copy;
+  $('result-emblem').innerHTML = uiIcon(icon);
+  screen.dataset.outcome = outcome;
+  screen.hidden = false;
+  clearTimeout(lastFxTimer);
+  lastFxTimer = setTimeout(()=>{screen.hidden = true;},2000);
+}
+function cueGameFeedback(entry) {
+  if (entry.tipo === 'resultado_reto') {
+    queueMicrotask(()=>playResult(entry.resultado));
+    return;
+  }
+  if (!['descubrir','reclamar','cuidar','despierto_encontrado'].includes(entry.tipo)) return;
+  if (entry.tipo === 'reclamar') {
+    recentClaims.set(entry.id_arbol,Date.now()+650);
+    setTimeout(()=>recentClaims.delete(entry.id_arbol),650);
+  }
+  queueMicrotask(()=>playMapEffect(entry));
+}
+function revealCards() {
+  if (reducedMotion.matches) return;
+  document.querySelectorAll('#herbarium [data-illustrated-card]').forEach((card,index)=>{
+    const key = card.dataset.illustratedCard;
+    if (shownCards.has(key)) return;
+    shownCards.add(key);
+    card.style.setProperty('--card-delay',Math.min(index,8)*36+'ms');
+    card.classList.add('card-flip');
+  });
+}
+
 function save() {
   try { localStorage.setItem(STORE, JSON.stringify(state)); $('storage-error').hidden = true; }
   catch { $('storage-error').hidden = false; }
@@ -428,6 +757,7 @@ function coords(fix = locationFix) {
 function event(tipo, id, now, posicion = coords(), extra = {}) {
   const entry = {tipo, fecha:new Date(now).toISOString(), id_arbol:id, posicion, ...extra};
   state.eventos.push(entry);
+  cueGameFeedback(entry);
   return entry;
 }
 function meters(a,b) {
@@ -835,7 +1165,7 @@ function setLocation(lat,lng,accuracy = null,restored = false) {
   checkAwake(now);
   save();
   drawPlayer();
-  if (!previous && mode === 'gps' && map && inPark(fix)) map.panTo([lat,lng]);
+  if (!previous && mode === 'gps' && map && inPark(fix)) map.panTo([lat,lng],{animate:!reducedMotion.matches});
   render(now);
 }
 function setMode(next,reason = '') {
@@ -877,18 +1207,49 @@ function setMode(next,reason = '') {
 function drawPlayer() {
   if (!map) return;
   if (!locationFix) {
+    cancelAnimationFrame(playerFrame);
     playerMarker?.remove();
     accuracyCircle?.remove();
-    playerMarker = accuracyCircle = null;
+    interactionRadius?.remove();
+    playerMarker = accuracyCircle = interactionRadius = playerPosition = playerDestination = null;
     return;
   }
-  const point = [locationFix.lat,locationFix.lng];
+  const target = L.latLng(locationFix.lat,locationFix.lng);
   if (!playerMarker) {
-    accuracyCircle = L.circle(point,{radius:0,interactive:false,color:'#246aba',weight:1,fillOpacity:.09}).addTo(map);
-    playerMarker = L.circleMarker(point,{radius:8,interactive:false,color:'#fff',weight:3,fillColor:'#1569c2',fillOpacity:1}).addTo(map);
+    accuracyCircle = L.circle(target,{radius:0,interactive:false,color:'#216a77',weight:1,opacity:.4,fillOpacity:.045}).addTo(map);
+    interactionRadius = L.circle(target,{
+      radius:20,interactive:false,color:'#fcf7ae',weight:2,opacity:.96,fillColor:'#f9f3a1',fillOpacity:.15,dashArray:'3 5'
+    }).addTo(map);
+    const icon = L.divIcon({className:'explorer-icon',iconSize:[58,57],iconAnchor:[29,50],
+      html:'<div class="explorer-shell"><i class="explorer-radar"></i><i class="explorer-radar echo"></i>'+
+        '<svg viewBox="0 0 47 55" aria-hidden="true"><use href="#game-explorer"></use></svg></div>'});
+    playerMarker = L.marker(target,{icon,zIndexOffset:1300,interactive:false,keyboard:false}).addTo(map);
+    playerPosition = target;
   }
-  accuracyCircle.setLatLng(point).setRadius(locationFix.accuracy || 0);
-  playerMarker.setLatLng(point).bringToFront();
+  accuracyCircle.setRadius(locationFix.accuracy || 0);
+  if (playerDestination?.lat === target.lat && playerDestination?.lng === target.lng) return;
+  cancelAnimationFrame(playerFrame);
+  playerDestination = target;
+  function place(point) {
+    playerPosition = point;
+    playerMarker.setLatLng(point);
+    accuracyCircle.setLatLng(point);
+    interactionRadius.setLatLng(point);
+  }
+  if (reducedMotion.matches || (playerPosition.lat === target.lat && playerPosition.lng === target.lng)) {
+    place(target);
+    return;
+  }
+  const start = playerPosition;
+  let began;
+  function move(time) {
+    began ??= time;
+    const progress = reducedMotion.matches ? 1 : Math.min((time-began)/440,1);
+    const ease = 1 - (1-progress)**3;
+    place(L.latLng(start.lat+(target.lat-start.lat)*ease,start.lng+(target.lng-start.lng)*ease));
+    playerFrame = progress < 1 ? requestAnimationFrame(move) : 0;
+  }
+  playerFrame = requestAnimationFrame(move);
 }
 function fitPark() {
   if (map) map.fitBounds(L.latLngBounds(outline[0]),{padding:[17,17],maxZoom:17,animate:false});
@@ -910,8 +1271,9 @@ function addBasemap() {
   const broken = new Set();
   let timeout, slow = false;
   const updateWarning = () => { warning.hidden = !slow && !broken.size; };
-  const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  const tiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png',{
+    subdomains:'abcd',maxNativeZoom:19,maxZoom:20,
+    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
   });
   tiles.on('loading',() => {
     clearTimeout(timeout);
@@ -928,11 +1290,18 @@ function addBasemap() {
 }
 function initMap() {
   if (!window.L) return;
-  map = L.map('map',{zoomControl:false}).setView(CENTER,16);
+  map = L.map('map',{zoomControl:false,zoomAnimation:!reducedMotion.matches,
+    fadeAnimation:!reducedMotion.matches,markerZoomAnimation:!reducedMotion.matches}).setView(CENTER,16);
   L.control.zoom({position:'topleft'}).addTo(map);
   addBasemap();
-  parkLayer = L.polygon(outline,{color:'#416952',weight:2,fillOpacity:.05,dashArray:'5 5',interactive:false}).addTo(map);
-  markers = L.layerGroup().addTo(map);
+  addParkEffects();
+  clustered = typeof L.markerClusterGroup === 'function';
+  markers = (clustered ? L.markerClusterGroup({
+    maxClusterRadius:zoom=>zoom < 17 ? 55 : 39,showCoverageOnHover:false,
+    spiderfyDistanceMultiplier:1.5,spiderLegPolylineOptions:{weight:1.4,color:'#547954',opacity:.7},
+    animate:!reducedMotion.matches,iconCreateFunction:makeClusterIcon
+  }) : L.layerGroup()).addTo(map);
+  map.on('move zoom resize',positionEffects);
   fitPark();
   map.on('click',({latlng}) => {
     if (mode === 'test') setLocation(latlng.lat,latlng.lng);
@@ -947,25 +1316,43 @@ function initMap() {
 function rebuildMarkers() {
   if (!map) return;
   parkLayer.setLatLngs(outline);
+  fogLayer.setLatLngs([PARK_FOG_FRAME,...outline]);
   markers.clearLayers();
   markerById.clear();
   const now = Date.now();
+  const date = dayKey(now);
+  const newMarkers = [];
   for (const tree of trees.values()) {
     const condition = status(tree.id,now);
     const bounds = L.latLng(tree.lat,tree.lng);
-    const marker = L.marker(bounds,{icon:treeIcon(condition,tree.tier),alt:tree.label,title:tree.label,bubblingMouseEvents:false}).addTo(markers);
+    const foundAwake = !!state.awake[date]?.[tree.id];
+    const marker = L.marker(bounds,{icon:treeIcon(tree,condition,foundAwake),alt:tree.label,title:tree.label,
+      foundAwake,bubblingMouseEvents:false});
+    newMarkers.push(marker);
     marker.on('click',() => {
       selected = tree.id;
       if (mode === 'test') setLocation(tree.lat,tree.lng);
       render();
     });
-    markerById.set(tree.id,{marker,condition});
+    markerById.set(tree.id,{marker,condition,foundAwake});
   }
+  if (clustered) markers.addLayers(newMarkers);
+  else for (const marker of newMarkers) marker.addTo(markers);
   drawPlayer();
 }
-function treeIcon(condition,tier) {
-  const size = 21;
-  return L.divIcon({className:'tree-icon',html:'<span aria-hidden="true" class="tree-dot '+tier+'" style="--dot:'+colors[condition]+'"></span>',iconSize:[size,size],iconAnchor:[size/2,size/2]});
+function treeIcon(tree,condition,shines) {
+  const tier = tree.tier;
+  const size = tier === 'remarcable' ? 50 : tier === 'notable' ? 45 : 42;
+  const phase = (hash(tree.id)%4500)/1000;
+  const period = 3.9 + (hash('viento/'+tree.id)%19)/10;
+  const halo = tier !== 'comun' ? '<i class="tree-halo"></i>' : '';
+  const awake = shines ? '<i class="wake-aura"></i>' : '';
+  const spark = tier === 'remarcable' ? '<i class="tree-spark a">✦</i><i class="tree-spark b">✧</i>' : '';
+  const claimed = recentClaims.has(tree.id) ? ' tree-claimed' : '';
+  return L.divIcon({className:'tree-icon',html:'<span aria-hidden="true" class="tree-glyph '+tier+
+    '" style="--crown:'+colors[condition]+';--team:'+colors[condition]+';--phase:-'+phase+'s;--period:'+period+'s">'+halo+awake+
+    '<svg class="tree-art'+claimed+'" viewBox="0 0 50 50"><use href="#game-tree"></use></svg>'+spark+'</span>',
+    iconSize:[size,size],iconAnchor:[size/2,size-6]});
 }
 function ensureRivals(now) {
   const ids = [...trees.values()].sort((a,b) => hash('equipo/' + a.id)-hash('equipo/' + b.id));
@@ -1120,16 +1507,22 @@ function renderMap(now) {
   tipButton.hidden = !tip.id;
   if (tip.id) tipButton.dataset.id = tip.id;
   radarEl.dataset.heat = candidates.length && locationFix ? heat : '';
+  $('panel-mapa').dataset.signal = radarEl.dataset.heat;
   radarEl.textContent = !liveCatalog.length ? 'Radar · esperando árboles' : !candidates.length ? 'Radar · encontrados por hoy' :
     !locationFix ? 'Radar · esperando ubicación' : 'Radar · ' + heat;
   const positionText = gpsText + (locationFix ? ' · ' + (inside ? 'dentro del parque' : 'fuera del parque') : '');
   if ($('gps-status').textContent !== positionText) $('gps-status').textContent = positionText;
   $('position-mode').textContent = mode === 'test' ? 'Activar GPS' : 'Modo prueba';
+  const changedGlow = [];
   for (const [id,item] of markerById) {
     const condition = status(id,now);
-    if (item.condition !== condition) {
-      item.marker.setIcon(treeIcon(condition,trees.get(id).tier));
+    const foundAwake = !!state.awake[date]?.[id];
+    if (item.condition !== condition || item.foundAwake !== foundAwake) {
+      item.marker.setIcon(treeIcon(trees.get(id),condition,foundAwake));
+      if (item.foundAwake !== foundAwake) changedGlow.push(item.marker);
+      item.marker.options.foundAwake = foundAwake;
       item.condition = condition;
+      item.foundAwake = foundAwake;
     }
     const el = item.marker.getElement();
     if (el) {
@@ -1138,8 +1531,18 @@ function renderMap(now) {
       if (el.getAttribute('aria-label') !== label) el.setAttribute('aria-label',label);
     }
   }
+  if (clustered && changedGlow.length) markers.refreshClusters(changedGlow);
   const tree = trees.get(selected);
-  $('tree-detail').hidden = !tree;
+  const detail = $('tree-detail');
+  detail.hidden = !tree;
+  if ((tree?.id || null) !== lastShownTree) {
+    detail.classList.remove('card-arrival');
+    if (tree && !reducedMotion.matches) {
+      void detail.offsetWidth;
+      detail.classList.add('card-arrival');
+    }
+    lastShownTree = tree?.id || null;
+  }
   $('map-overview').hidden = !!tree;
   if (!tree) return;
   const distance = distanceTo(tree);
@@ -1170,12 +1573,14 @@ function renderHerbarium() {
     group.items.map(({fecha,tree})=>'<p class="hint">OSM '+html(tree.id)+' · '+html(treeMeta(tree))+' · '+html(fullDate.format(new Date(fecha)))+'</p>').join('')+
     '</article>').join('');
   const cards = Object.entries(state.cards).flatMap(([key,stack]) => Object.entries(stack.variants).map(([variant,count]) =>
-    '<article class="tile '+(variant === 'normal' ? '' : 'rare')+'"><strong>'+html(stack.label)+'</strong><small>' +
+    '<article class="tile field-card '+(variant === 'normal' ? '' : 'rare')+'" data-illustrated-card="'+html(JSON.stringify([key,variant]))+'">'+
+    uiIcon('wood','ui-icon card-emblem')+'<strong>'+html(stack.label)+'</strong><small>' +
     html(VARIANTS[variant])+' · ×'+count+'</small>'+(variant === 'especial' ? '' :
     '<small>'+cardCount(key)+' disponibles para subir nivel</small>')+'</article>')).join('');
   drawPanel('herbarium','<h2>Herbario</h2><p class="hint">'+Object.keys(state.species).length+' especies identificadas · '+Object.keys(state.discoveries).length+
     ' árboles descubiertos</p><div class="entries">'+(entries || '<p>Haz una foto junto a un árbol para añadirlo a tu herbario.</p>')+
     '</div><h3>Cartas</h3>'+(cards ? '<div class="cards">'+cards+'</div>' : '<p class="hint">Descubre o cuida un árbol para ganar una carta.</p>'));
+  revealCards();
 }
 function renderMyTrees(now) {
   const list = currentTrees(now);
@@ -1379,7 +1784,7 @@ function renderProfile(now) {
     '<button type="button" class="secondary" data-action="export">Exportar datos (JSON)</button></div>');
 }
 function render(now = Date.now()) {
-  $('wallet').textContent = number.format(state.savia)+' Savia';
+  paintWallet();
   const alert = nextIncoming(now);
   $('duel-banner').hidden = !alert;
   if (alert) {
@@ -1458,7 +1863,7 @@ $('species-dialog').addEventListener('close',()=>{speciesTree = null;});
 $('cancel-species').addEventListener('click',()=>$('species-dialog').close());
 $('reload-trees').addEventListener('click',() => loadTrees(true));
 $('locate').addEventListener('click',() => {
-  if (map && locationFix) map.setView([locationFix.lat,locationFix.lng],Math.max(16,map.getZoom()));
+  if (map && locationFix) map.setView([locationFix.lat,locationFix.lng],Math.max(16,map.getZoom()),{animate:!reducedMotion.matches});
   else fitPark();
 });
 document.addEventListener('click',event => {
@@ -1476,7 +1881,7 @@ document.addEventListener('click',event => {
     if (!tree) return;
     selected = id;
     showTab('mapa');
-    map?.setView([tree.lat,tree.lng],Math.max(17,map.getZoom()));
+    map?.setView([tree.lat,tree.lng],Math.max(17,map.getZoom()),{animate:!reducedMotion.matches});
   } else act(action,id);
 });
 document.querySelector('nav').addEventListener('keydown',event => {
