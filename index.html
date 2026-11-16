@@ -2673,8 +2673,9 @@ async function startFirebase() {
   const players=collection(db,'players'), sharedTrees=collection(db,'trees'), duels=collection(db,'challenges');
   const clans=collection(db,'clans'), events=collection(db,'events'), goals=collection(db,'clanGoals');
   const player=doc(players,uid), privateSave=doc(player,'private','save'), privateMembership=doc(player,'private','membership');
+  const privateReceipts=doc(player,'private','receipts');
   const clanRef=id=>doc(clans,id), treeRef=id=>doc(sharedTrees,id), duelRef=id=>doc(duels,id);
-  let treeData=new Map(), duelData=new Map(), goalData=[];
+  let treeData=new Map(), duelData=new Map(), goalData=[], receipts=[];
   let status=new Map(), syncTimer, syncing=false, scoring=false, resolving=false, actionBusy=false, nextPulse=0;
   let checkedWallet=false;
   let stopClan=()=>{}, stopCode=()=>{}, watchedClan=null, lastProfile='', lastBackup='';
@@ -2717,7 +2718,7 @@ async function startFirebase() {
     for (const item of history.docs) uploaded.set(item.id,JSON.stringify(Object.fromEntries(Object.entries(item.data()).sort(([a],[b])=>a.localeCompare(b)))));
     if (!publicSnapshot.exists()) {
       await setDoc(player,{pseudo:state.profile?.nickname || '',nivel:levelFor().level,xp:state.progression.xp,
-        clanId:null,puntosTemporada:0,updatedAt:serverTimestamp(),slots:[],receipts:[],leftUntil:0,});
+        clanId:null,puntosTemporada:0,updatedAt:serverTimestamp(),slots:[],leftUntil:0,});
     }
     state.cloudUid=uid;
     onlineWorld.uid=uid;
@@ -2841,7 +2842,7 @@ async function startFirebase() {
     stopCode=onSnapshot(doc(clanRef(id),'private','code'),snapshot=>{onlineWorld.code=data(snapshot)?.code || '';render();},()=>{});
   }
   function refresh() {
-    const ready=navigator.onLine!==false && ['players','trees','duels','clans','goals'].every(id=>status.get(id));
+    const ready=navigator.onLine!==false && ['players','trees','duels','clans','goals','receipts'].every(id=>status.get(id));
     if (ready && !onlineWorld.ready) scoreOnDay='';
     onlineWorld.ready=ready;
     if (status.get('trees')) activeTrees(Date.now());
@@ -2850,7 +2851,7 @@ async function startFirebase() {
         checkedWallet=true;
         if (!ownedCount(Date.now()) && state.savia<10) { state.savia=20; save(); }
       }
-      for (const receipt of onlineWorld.players.get(uid)?.receipts || []) applyReceipt(receipt);
+      for (const receipt of receipts) applyReceipt(receipt);
       collectResults(Date.now());
       observeClan();
       sync();
@@ -2956,8 +2957,9 @@ async function startFirebase() {
   function receiptFor(type,id,treeId,time,position,extra={}) {
     return {type,id,treeId,time,position,...extra};
   }
-  function writeReceipt(t,p,receipt,patch={}) {
-    t.update(player,{...patch,receipts:[...(p.receipts || []),receipt].slice(-40)});
+  function writeReceipt(t,previous,receipt,patch={}) {
+    if (Object.keys(patch).length) t.update(player,patch);
+    t.set(privateReceipts,{items:[...(previous?.items || []),receipt].slice(-40)});
   }
   async function reserve(t,p,treeId,now) {
     const slots=await Promise.all(p.slots.map(async id=>{
@@ -2979,7 +2981,7 @@ async function startFirebase() {
       const receipt=await tx(async t=>{
         const now=Date.now(), ref=treeRef(tree.id);
         if (distanceTo(tree)>=20) fail('distance');
-        const [p,current]=await Promise.all([t.get(player),t.get(ref)]).then(items=>items.map(data));
+        const [p,current,previous]=await Promise.all([t.get(player),t.get(ref),t.get(privateReceipts)]).then(items=>items.map(data));
         const other=current && current.ownerUid!==uid ? data(await t.get(doc(players,current.ownerUid))) : p;
         const same=!!(p.clanId && p.clanId===other?.clanId);
         const free=isFree(current,now);
@@ -3028,7 +3030,7 @@ async function startFirebase() {
           }
         }
         const receipt=receiptFor(type,id,tree.id,now,position,{tier,price,clanId:p.clanId});
-        writeReceipt(t,p,receipt,patch);
+        writeReceipt(t,previous,receipt,patch);
         return receipt;
       });
       applyReceipt(receipt);
@@ -3077,7 +3079,8 @@ async function startFirebase() {
       const code=makeCode(), codeRef=doc(db,'clanCodes',code);
       try {
         const receipt=await tx(async t=>{
-          const now=Date.now(), p=data(await t.get(player));
+          const now=Date.now();
+      const [p,previous]=await Promise.all([t.get(player),t.get(privateReceipts)]).then(items=>items.map(data));
           canJoin(p,now);
           if ((await t.get(codeRef)).exists()) fail('code-collision');
           const held=await membershipTrees(t,p,ref.id,now);
@@ -3086,7 +3089,7 @@ async function startFirebase() {
             points:0,weekGoal:40,weekProgress:0,weekKey:weekOf(dayKey(now)),createdAt:serverTimestamp()});
           t.set(codeRef,{clanId:ref.id});
           t.set(doc(ref,'private','code'),{code});
-          writeReceipt(t,p,receipt,{clanId:ref.id});
+          writeReceipt(t,previous,receipt,{clanId:ref.id});
           for (const item of held) t.update(item.ref,item.fields);
           note(t,ref.id,id,'clan_creado',p.pseudo);
           return receipt;
@@ -3102,7 +3105,8 @@ async function startFirebase() {
     await flush();
     const log=eventId();
     const receipt=await tx(async t=>{
-      const now=Date.now(), p=data(await t.get(player));
+      const now=Date.now();
+      const [p,previous]=await Promise.all([t.get(player),t.get(privateReceipts)]).then(items=>items.map(data));
       canJoin(p,now);
       const clanId=code ? data(await t.get(doc(db,'clanCodes',code)))?.clanId : id;
       if (!clanId) fail('invalid-clan');
@@ -3113,7 +3117,7 @@ async function startFirebase() {
       t.update(ref,{members:{...clan.members,[uid]:now},memberCount:clan.memberCount+1});
       if (code) t.set(privateMembership,{code,clanId});
       const receipt=receiptFor('clan_unido',log,null,now,null,{clanId});
-      writeReceipt(t,p,receipt,{clanId});
+      writeReceipt(t,previous,receipt,{clanId});
       for (const item of held) t.update(item.ref,item.fields);
       note(t,clanId,log,'clan_unido',p.pseudo);
       return receipt;
@@ -3123,7 +3127,8 @@ async function startFirebase() {
   async function leaveClan() {
     const id=eventId();
     const receipt=await tx(async t=>{
-      const now=Date.now(), p=data(await t.get(player));
+      const now=Date.now();
+      const [p,previous]=await Promise.all([t.get(player),t.get(privateReceipts)]).then(items=>items.map(data));
       if (!p.clanId) fail('invalid-clan');
       const ref=clanRef(p.clanId), c=data(await t.get(ref));
       const held=await membershipTrees(t,p,null,now);
@@ -3131,7 +3136,7 @@ async function startFirebase() {
       const remaining=roster(members), archived=remaining.length===0;
       t.update(ref,{members,memberCount:remaining.length,archived,open:!archived && c.open,ownerUid:c.ownerUid===uid ? remaining[0] || null : c.ownerUid});
       const receipt=receiptFor('clan_salido',id,null,now,null,{clanId:p.clanId});
-      writeReceipt(t,p,receipt,{clanId:null,leftUntil:now+DAY});
+      writeReceipt(t,previous,receipt,{clanId:null,leftUntil:now+DAY});
       for (const item of held) t.update(item.ref,item.fields);
       note(t,p.clanId,id,'clan_salido',p.pseudo);
       return receipt;
@@ -3166,6 +3171,11 @@ async function startFirebase() {
   watch('duels',duels,items=>{duelData=items;});
   watch('clans',clans,items=>{onlineWorld.clans=new Map([...items].filter(([,c])=>!c.archived));});
   watch('goals',query(goals,where('eligible','array-contains',uid)),items=>{goalData=[...items].map(([id,item])=>({id,...item}));});
+  onSnapshot(privateReceipts,{includeMetadataChanges:true},snapshot=>{
+    status.set('receipts',!snapshot.metadata.fromCache);
+    receipts=data(snapshot)?.items || [];
+    refresh();
+  },error=>{status.set('receipts',false);console.warn('Forestrix receipts',error.code);refresh();});
   window.addEventListener('online',()=>{nextPulse=0;refresh();});
   window.addEventListener('offline',refresh);
 }
