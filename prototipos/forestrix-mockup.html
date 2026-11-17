@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forestrix — App Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:   #080808; --bg2: #0D130A; --bg3: #111A0D;
+    --mgd:  #1C2B10; --mgm: #2D4219; --mg:  #3E5C24;
+    --gold: #C9952A; --goldl: #D4A93C; --goldd: #8B6914;
+    --burg: #8B1A28; --burgl: #A52535;
+    --wht:  #D4C9A8; --gr: #8A8070; --gr2: #5C5448;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: #050505;
+    font-family: 'Barlow', sans-serif;
+    min-height: 100vh;
+    padding: 60px 40px;
+  }
+
+  /* ── HEADER ── */
+  .page-header {
+    text-align: center; margin-bottom: 64px;
+  }
+  .page-header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px; letter-spacing: 6px; color: var(--wht);
+  }
+  .page-header span { color: var(--gold); }
+  .page-header p { color: var(--gr); font-size: 14px; letter-spacing: 2px; text-transform: uppercase; margin-top: 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; }
+
+  /* ── SCREENS ROW ── */
+  .screens { display: flex; gap: 48px; justify-content: center; flex-wrap: wrap; align-items: flex-start; }
+  .screen-wrap { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+  .screen-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 12px; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--gold);
+  }
+
+  /* ── PHONE FRAME ── */
+  .phone {
+    width: 260px; height: 540px;
+    background: #0A0A0A;
+    border-radius: 36px;
+    border: 2px solid #2A2A2A;
+    box-shadow:
+      0 0 0 1px #1A1A1A,
+      0 40px 80px rgba(0,0,0,0.8),
+      inset 0 1px 0 rgba(255,255,255,0.05);
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  /* Notch */
+  .phone::before {
+    content: '';
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 80px; height: 22px;
+    background: #0A0A0A; border-radius: 12px; z-index: 20;
+    border: 1px solid #222;
+  }
+  /* Side buttons */
+  .phone::after {
+    content: '';
+    position: absolute; right: -3px; top: 120px;
+    width: 3px; height: 60px;
+    background: #2A2A2A; border-radius: 2px;
+  }
+  .screen { flex: 1; overflow: hidden; position: relative; margin-top: 36px; }
+
+  /* ── STATUS BAR ── */
+  .status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 16px 4px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px; font-weight: 700; color: var(--wht);
+    position: absolute; top: 0; left: 0; right: 0; z-index: 10;
+  }
+  .status-icons { display: flex; gap: 4px; align-items: center; }
+
+  /* ── NAV BAR (bottom) ── */
+  .app-nav {
+    background: rgba(8,8,8,0.97);
+    border-top: 1px solid rgba(201,149,42,0.15);
+    display: flex; justify-content: space-around; align-items: center;
+    padding: 8px 0 10px; flex-shrink: 0;
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--gr2); cursor: pointer;
+  }
+  .nav-item.active { color: var(--gold); }
+  .nav-icon { font-size: 18px; }
+
+  /* ══════════════════════════════════
+     SCREEN 1 — CARTE / MAP
+  ══════════════════════════════════ */
+  .map-bg {
+    width: 100%; height: 100%;
+    background: #1A2810;
+    position: relative; overflow: hidden;
+  }
+  /* Tree markers */
+  .tree-marker {
+    position: absolute;
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    border: 2px solid;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    cursor: pointer;
+  }
+  .tree-marker.mine   { background: rgba(201,149,42,0.25); border-color: var(--gold); }
+  .tree-marker.free   { background: rgba(62,92,36,0.4);    border-color: var(--mg); }
+  .tree-marker.taken  { background: rgba(139,26,40,0.35);  border-color: var(--burg); }
+  .tree-marker.mine::after {
+    content: ''; position: absolute; top: -6px; right: -4px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--gold); border: 1px solid #000;
+    font-size: 7px; display: flex; align-items: center; justify-content: center;
+  }
+  /* User location dot */
+  .user-dot {
+    position: absolute;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--gold);
+    box-shadow: 0 0 0 4px rgba(201,149,42,0.2), 0 0 0 8px rgba(201,149,42,0.08);
+  }
+  /* Map top bar */
+  .map-topbar {
+    position: absolute; top: 16px; left: 12px; right: 12px; z-index: 5;
+    display: flex; gap: 6px; align-items: center;
+  }
+  .map-search {
+    flex: 1; background: rgba(8,8,8,0.88); border: 1px solid rgba(201,149,42,0.25);
+    border-radius: 10px; padding: 7px 12px;
+    font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--gr);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .map-filter-btn {
+    width: 32px; height: 32px; border-radius: 10px;
+    background: rgba(201,149,42,0.15); border: 1px solid rgba(201,149,42,0.3);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+  }
+  /* Coins counter top right */
+  .coin-counter {
+    position: absolute; top: 58px; right: 12px; z-index: 5;
+    background: rgba(8,8,8,0.9); border: 1px solid rgba(201,149,42,0.3);
+    border-radius: 50px; padding: 5px 10px;
+    display: flex; align-items: center; gap: 5px;
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+    font-size: 12px; color: var(--gold);
+  }
+  /* Legend */
+  .map-legend {
+    position: absolute; bottom: 10px; left: 12px; z-index: 5;
+    background: rgba(8,8,8,0.88); border: 1px solid rgba(62,92,36,0.2);
+    border-radius: 10px; padding: 8px 10px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'Barlow Condensed', sans-serif; font-size: 9px;
+    letter-spacing: 1px; text-transform: uppercase; color: var(--gr);
+  }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ══════════════════════════════════
+     SCREEN 2 — FICHE ARBRE
+  ══════════════════════════════════ */
+  .fiche-bg {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    overflow-y: auto; overflow-x: hidden;
+  }
+  /* Tree hero */
+  .tree-hero {
+    width: 100%; height: 140px;
+    background: linear-gradient(160deg, var(--mgd) 0%, var(--bg) 100%);
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .tree-hero-svg { position: relative; z-index: 2; }
+  .tree-hero-glow {
+    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100px; height: 40px;
+    background: radial-gradient(ellipse, rgba(201,149,42,0.15), transparent);
+  }
+  .back-btn {
+    position: absolute; top: 14px; left: 12px; z-index: 10;
+    width: 28px; height: 28px; border-radius: 8px;
+    background: rgba(8,8,8,0.7); border: 1px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: var(--wht);
+  }
+  .owner-badge-top {
+    position: absolute; top: 14px; right: 12px; z-index: 10;
+    background: rgba(62,92,36,0.8); border: 1px solid var(--mg);
+    border-radius: 50px; padding: 4px 10px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--wht);
+  }
+  .fiche-body { padding: 14px 14px 80px; }
+  .fiche-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px; letter-spacing: 2px; color: var(--wht); margin-bottom: 2px;
+  }
+  .fiche-park {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 14px;
+  }
+  /* Stats */
+  .stat-block { margin-bottom: 10px; }
+  .stat-row-mini { display: flex; justify-content: space-between; margin-bottom: 3px; }
+  .stat-lbl { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gr); }
+  .stat-val { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; color: var(--wht); }
+  .stat-bar-bg { height: 3px; background: rgba(201,149,42,0.1); border-radius: 2px; }
+  .stat-bar-fill { height: 3px; border-radius: 2px; background: linear-gradient(90deg, var(--mgm), var(--gold)); }
+  /* Value card */
+  .value-card {
+    background: rgba(201,149,42,0.08); border: 1px solid rgba(201,149,42,0.25);
+    border-radius: 12px; padding: 12px; margin: 14px 0;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .value-label { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--gr); }
+  .value-num {
+    font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 1px;
+    color: var(--gold); display: flex; align-items: baseline; gap: 4px;
+  }
+  .value-unit { font-size: 12px; color: var(--goldd); }
+  /* Buy button */
+  .buy-btn {
+    width: 100%; padding: 12px; border-radius: 12px;
+    background: var(--gold); border: none;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px; letter-spacing: 3px; color: #000;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .buy-cost {
+    background: rgba(0,0,0,0.2); border-radius: 50px;
+    padding: 2px 10px; font-size: 13px; letter-spacing: 1px;
+  }
+
+  /* ══════════════════════════════════
+     SCREEN 3 — CLASSEMENT / RANKING
+  ══════════════════════════════════ */
+  .rank-bg {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    overflow: hidden; display: flex; flex-direction: column;
+  }
+  .rank-header-bar {
+    background: var(--mgd);
+    padding: 14px 14px 10px;
+    border-bottom: 1px solid rgba(201,149,42,0.15);
+  }
+  .rank-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; letter-spacing: 3px; color: var(--wht);
+  }
+  .rank-tabs {
+    display: flex; gap: 6px; margin-top: 8px;
+  }
+  .rank-tab {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 50px;
+    color: var(--gr);
+  }
+  .rank-tab.active {
+    background: rgba(201,149,42,0.15); color: var(--gold);
+    border: 1px solid rgba(201,149,42,0.3);
+  }
+  /* Podium */
+  .podium { display: flex; justify-content: center; align-items: flex-end; gap: 8px; padding: 12px 14px 8px; }
+  .pod-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .pod-avatar {
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; border: 2px solid; flex-shrink: 0;
+  }
+  .pod-name { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--wht); letter-spacing: 1px; text-align: center; }
+  .pod-pts { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; color: var(--gold); }
+  .pod-base { border-radius: 6px 6px 0 0; display: flex; align-items: center; justify-content: center; }
+  .pod-num { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1px; color: rgba(0,0,0,0.5); }
+  /* Rank list */
+  .rank-list { flex: 1; overflow-y: auto; padding: 4px 0; }
+  .rank-row-mini {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .rank-pos { font-family: 'Bebas Neue', sans-serif; font-size: 14px; color: var(--gr2); width: 16px; text-align: center; }
+  .rank-av { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .rank-info { flex: 1; }
+  .rank-uname { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; color: var(--wht); letter-spacing: 1px; text-transform: uppercase; }
+  .rank-trees-mini { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--gr2); font-weight: 300; }
+  .rank-score { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; color: var(--gold); display: flex; align-items: center; gap: 4px; }
+
+  /* ══════════════════════════════════
+     SCREEN 4 — PROFIL
+  ══════════════════════════════════ */
+  .profil-bg {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    overflow-y: auto;
+  }
+  .profil-hero {
+    background: linear-gradient(160deg, var(--mgd) 0%, var(--bg) 100%);
+    padding: 18px 14px 20px;
+    display: flex; flex-direction: column; align-items: center;
+    border-bottom: 1px solid rgba(201,149,42,0.12);
+  }
+  .profil-avatar {
+    width: 60px; height: 60px; border-radius: 18px;
+    background: var(--mgm); border: 2px solid var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; margin-bottom: 8px;
+  }
+  .profil-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; letter-spacing: 3px; color: var(--wht);
+  }
+  .profil-rank {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 14px;
+  }
+  .profil-stats-row {
+    display: flex; gap: 8px; width: 100%;
+  }
+  .pstat {
+    flex: 1; background: rgba(8,8,8,0.6); border: 1px solid rgba(62,92,36,0.3);
+    border-radius: 10px; padding: 8px 6px; text-align: center;
+  }
+  .pstat-num { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; color: var(--wht); }
+  .pstat-lbl { font-family: 'Barlow Condensed', sans-serif; font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gr); }
+  .pstat-icon { font-size: 14px; margin-bottom: 2px; }
+  /* Currency row */
+  .currency-row {
+    display: flex; gap: 8px; padding: 12px 14px 0;
+  }
+  .currency-card {
+    flex: 1; border-radius: 12px; padding: 10px 12px;
+    border: 1px solid;
+  }
+  .currency-card.coins { background: rgba(201,149,42,0.08); border-color: rgba(201,149,42,0.25); }
+  .currency-card.rondins { background: rgba(62,92,36,0.1); border-color: rgba(62,92,36,0.3); }
+  .curr-label { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--gr); margin-bottom: 4px; }
+  .curr-amount { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1px; }
+  .curr-amount.gold { color: var(--gold); }
+  .curr-amount.green { color: var(--mg); }
+  .curr-sublabel { font-family: 'Barlow', sans-serif; font-size: 9px; color: var(--gr2); font-weight: 300; margin-top: 2px; }
+  /* My trees section */
+  .section-head {
+    padding: 14px 14px 8px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px; font-weight: 700; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--gold);
+  }
+  .tree-list { padding: 0 14px; display: flex; flex-direction: column; gap: 8px; padding-bottom: 80px; }
+  .tree-list-item {
+    background: var(--bg2); border: 1px solid rgba(62,92,36,0.25);
+    border-radius: 12px; padding: 10px 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .tree-list-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--mgd); display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .tree-list-info { flex: 1; }
+  .tree-list-name { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--wht); }
+  .tree-list-park { font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--gr2); font-weight: 300; }
+  .tree-list-pts {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700;
+    color: var(--gold); display: flex; align-items: center; gap: 3px;
+  }
+  /* Defense bar */
+  .defense-bar { height: 3px; border-radius: 2px; background: rgba(255,255,255,0.06); margin-top: 4px; }
+  .defense-fill { height: 3px; border-radius: 2px; background: var(--burg); }
+
+  /* ── WOOD SLICE icon ── */
+  .wp-sm {
+    display: inline-block; width: 14px; height: 14px; vertical-align: middle;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11.8' fill='%231A0805'/%3E%3Ccircle cx='12' cy='12' r='10.2' fill='%234A2210'/%3E%3Ccircle cx='12' cy='12' r='8.5' fill='%236B3A1E'/%3E%3Ccircle cx='12' cy='12' r='6.8' fill='%238B5030'/%3E%3Ccircle cx='12' cy='12' r='5' fill='%23A8714A'/%3E%3Ccircle cx='12' cy='12' r='3.4' fill='%23C49060'/%3E%3Ccircle cx='12' cy='12' r='1.8' fill='%23D4A870'/%3E%3C/svg%3E");
+    background-size: cover;
+  }
+  .sc-sm {
+    display: inline-block; width: 14px; height: 14px; vertical-align: middle;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11.5' fill='%23C9952A'/%3E%3Crect x='8.5' y='8.5' width='7' height='7' fill='%23080808'/%3E%3C/svg%3E");
+    background-size: cover;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>FORESTRIX <span>·</span> APP</h1>
+  <p>Écrans principaux — Maquette UI</p>
+</div>
+
+<div class="screens">
+
+  <!-- ══ SCREEN 1: CARTE ══ -->
+  <div class="screen-wrap">
+    <div class="screen-label">01 — Carte</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="status-icons">
+            <span>●●●</span>
+            <span>WiFi</span>
+            <span>█</span>
+          </div>
+        </div>
+
+        <div class="map-bg">
+
+          <!-- SVG TERRAIN -->
+          <svg width="260" height="450" viewBox="0 0 260 450"
+               xmlns="http://www.w3.org/2000/svg"
+               style="position:absolute;inset:0;width:100%;height:100%">
+            <defs>
+              <!-- Forest texture pattern -->
+              <pattern id="forestDots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse">
+                <circle cx="6" cy="6" r="1.4" fill="#1C2B10" opacity="0.5"/>
+              </pattern>
+              <pattern id="grassDots" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
+                <circle cx="4" cy="4" r="0.8" fill="#2D4219" opacity="0.3"/>
+              </pattern>
+              <!-- Vignette -->
+              <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+                <stop offset="0%"   stop-color="transparent"/>
+                <stop offset="100%" stop-color="#050805" stop-opacity="0.7"/>
+              </radialGradient>
+            </defs>
+
+            <!-- Base ground — dark earth -->
+            <rect width="260" height="450" fill="#161F0D"/>
+
+            <!-- ── ZONES FOREST — blobs organiques ── -->
+            <!-- NW dense forest -->
+            <path d="M0,0 C20,0 55,5 80,25 C100,40 110,55 90,75
+                     C75,90 50,95 30,80 C10,65 0,40 0,20Z"
+                  fill="#0E1A08"/>
+            <path d="M0,0 C15,0 45,8 65,28 C80,44 85,62 65,78
+                     C48,90 25,88 10,72 C-2,58 0,32 0,15Z"
+                  fill="#121E0A"/>
+
+            <!-- NE forest zone -->
+            <path d="M160,0 C185,0 220,10 245,30 C265,48 265,75 248,90
+                     C232,105 205,100 185,85 C165,72 155,50 160,28Z"
+                  fill="#0E1A08"/>
+            <path d="M200,0 L260,0 L260,60 C248,72 230,75 215,62
+                     C200,50 195,25 200,0Z"
+                  fill="#0A1406"/>
+
+            <!-- Central-left forest cluster -->
+            <path d="M0,150 C15,135 45,130 70,145 C90,158 95,180 80,198
+                     C65,215 35,218 15,205 C-5,192 -2,165 0,150Z"
+                  fill="#111B0A"/>
+            <path d="M0,180 C20,165 50,162 72,178 C88,190 90,212 74,226
+                     C58,240 28,242 10,230 C-6,218 -2,195 0,180Z"
+                  fill="#0D1608"/>
+
+            <!-- SE forest -->
+            <path d="M140,320 C165,308 205,310 230,328 C252,344 258,375 242,392
+                     C226,408 195,412 170,400 C148,388 135,360 140,320Z"
+                  fill="#0E1A08"/>
+            <path d="M170,360 C195,348 225,352 248,370 L260,390 L260,450
+                     L160,450 C152,432 155,378 170,360Z"
+                  fill="#0A1406"/>
+
+            <!-- SW bottom forest -->
+            <path d="M0,370 C20,355 55,352 78,368 C98,382 102,408 85,425
+                     C68,440 35,445 12,432 C-4,420 0,390 0,370Z"
+                  fill="#0E1A08"/>
+            <path d="M0,420 L0,450 L90,450 C78,435 55,425 30,428
+                     C15,430 5,428 0,420Z"
+                  fill="#0A1406"/>
+
+            <!-- ── CLEARING / PRAIRIE — centre ── -->
+            <ellipse cx="140" cy="200" rx="75" ry="65" fill="#1E3012"/>
+            <ellipse cx="140" cy="200" rx="60" ry="50" fill="#223614"/>
+            <!-- Texture herbe -->
+            <ellipse cx="140" cy="200" rx="60" ry="50" fill="url(#grassDots)"/>
+
+            <!-- Small clearing top-center -->
+            <ellipse cx="128" cy="88" rx="40" ry="28" fill="#1A2C0E"/>
+
+            <!-- ── ÉTANG / POND ── -->
+            <ellipse cx="46" cy="300" rx="32" ry="22" fill="#0A1820"/>
+            <ellipse cx="46" cy="300" rx="32" ry="22" fill="none" stroke="#1A3040" stroke-width="1.5"/>
+            <!-- Water shimmer -->
+            <ellipse cx="40" cy="296" rx="12" ry="5" fill="#0D2030" opacity="0.6"/>
+            <line x1="28" y1="300" x2="52" y2="300" stroke="#14304A" stroke-width="0.8" opacity="0.5"/>
+            <line x1="32" y1="304" x2="58" y2="304" stroke="#14304A" stroke-width="0.6" opacity="0.4"/>
+            <!-- Water reflection gold -->
+            <ellipse cx="50" cy="294" rx="6" ry="2" fill="#C9952A" opacity="0.06"/>
+
+            <!-- ── FOREST TEXTURE overlays ── -->
+            <path d="M0,0 C20,0 55,5 80,25 C100,40 110,55 90,75
+                     C75,90 50,95 30,80 C10,65 0,40 0,20Z"
+                  fill="url(#forestDots)"/>
+            <path d="M160,0 C185,0 220,10 245,30 C265,48 265,75 248,90
+                     C232,105 205,100 185,85 C165,72 155,50 160,28Z"
+                  fill="url(#forestDots)"/>
+            <path d="M0,150 C15,135 45,130 70,145 C90,158 95,180 80,198
+                     C65,215 35,218 15,205 C-5,192 -2,165 0,150Z"
+                  fill="url(#forestDots)"/>
+            <path d="M140,320 C165,308 205,310 230,328 C252,344 258,375 242,392
+                     C226,408 195,412 170,400 C148,388 135,360 140,320Z"
+                  fill="url(#forestDots)"/>
+
+            <!-- ── SENDEROS / PATHS ── -->
+            <!-- Main path — curves through park -->
+            <path d="M128,88 C120,110 100,130 105,160 C110,188 135,195 140,220
+                     C145,248 138,272 120,292 C105,308 80,314 60,308"
+                  fill="none" stroke="#C9A870" stroke-width="5" stroke-linecap="round" opacity="0.3"/>
+            <path d="M128,88 C120,110 100,130 105,160 C110,188 135,195 140,220
+                     C145,248 138,272 120,292 C105,308 80,314 60,308"
+                  fill="none" stroke="#D4B880" stroke-width="3" stroke-linecap="round"
+                  stroke-dasharray="0" opacity="0.55"/>
+
+            <!-- Secondary path east -->
+            <path d="M140,220 C160,215 182,210 200,222 C218,234 225,260 218,285
+                     C212,305 196,318 178,322"
+                  fill="none" stroke="#C9A870" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
+            <path d="M140,220 C160,215 182,210 200,222 C218,234 225,260 218,285
+                     C212,305 196,318 178,322"
+                  fill="none" stroke="#D4B880" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>
+
+            <!-- Small path to pond -->
+            <path d="M105,252 C90,260 75,268 65,282 C56,294 50,302 46,300"
+                  fill="none" stroke="#C9A870" stroke-width="3" stroke-linecap="round" opacity="0.25"/>
+            <path d="M105,252 C90,260 75,268 65,282 C56,294 50,302 46,300"
+                  fill="none" stroke="#D4B880" stroke-width="1.8" stroke-linecap="round" opacity="0.45"/>
+
+            <!-- Top path -->
+            <path d="M80,25 C95,45 108,65 128,88"
+                  fill="none" stroke="#D4B880" stroke-width="2.5" stroke-linecap="round" opacity="0.4"/>
+
+            <!-- Park boundary (dashed outline) -->
+            <rect x="4" y="4" width="252" height="442" rx="8"
+                  fill="none" stroke="#3E5C24" stroke-width="1.5"
+                  stroke-dasharray="6 4" opacity="0.35"/>
+
+            <!-- ── CONTOUR LINES (topographic feel) ── -->
+            <ellipse cx="140" cy="200" rx="100" ry="85" fill="none"
+                     stroke="#2D4219" stroke-width="0.5" opacity="0.25"/>
+            <ellipse cx="140" cy="200" rx="130" ry="110" fill="none"
+                     stroke="#2D4219" stroke-width="0.4" opacity="0.15"/>
+
+            <!-- ── COMPASS ROSE (top-right, subtle) ── -->
+            <g transform="translate(228, 26)" opacity="0.35">
+              <circle cx="0" cy="0" r="10" fill="none" stroke="#C9952A" stroke-width="0.8"/>
+              <text x="0" y="-13" text-anchor="middle" font-size="7" fill="#C9952A" font-family="Barlow Condensed,sans-serif" font-weight="700">N</text>
+              <line x1="0" y1="-8" x2="0" y2="8" stroke="#C9952A" stroke-width="0.8"/>
+              <line x1="-8" y1="0" x2="8" y2="0" stroke="#C9952A" stroke-width="0.5" opacity="0.5"/>
+              <polygon points="0,-8 -2.5,-2 0,-4 2.5,-2" fill="#C9952A"/>
+            </g>
+
+            <!-- Vignette overlay -->
+            <rect width="260" height="450" fill="url(#vignette)"/>
+
+            <!-- ── SCALE BAR (bottom right) ── -->
+            <g transform="translate(155, 432)" opacity="0.5">
+              <line x1="0" y1="0" x2="50" y2="0" stroke="#C9952A" stroke-width="1"/>
+              <line x1="0" y1="-3" x2="0" y2="3" stroke="#C9952A" stroke-width="1"/>
+              <line x1="50" y1="-3" x2="50" y2="3" stroke="#C9952A" stroke-width="1"/>
+              <text x="25" y="-5" text-anchor="middle" font-size="7" fill="#C9952A" font-family="Barlow Condensed,sans-serif">100 m</text>
+            </g>
+          </svg>
+
+          <!-- Tree markers (on top of SVG) -->
+          <div class="tree-marker mine"  style="top:112px;left:58px">🌳</div>
+          <div class="tree-marker free"  style="top:152px;left:152px">🌲</div>
+          <div class="tree-marker taken" style="top:88px;left:172px">🌳</div>
+          <div class="tree-marker free"  style="top:202px;left:78px">🌲</div>
+          <div class="tree-marker mine"  style="top:232px;left:185px">🌳</div>
+          <div class="tree-marker free"  style="top:268px;left:132px">🌲</div>
+          <div class="tree-marker taken" style="top:298px;left:48px">🌳</div>
+          <div class="tree-marker free"  style="top:320px;left:192px">🌲</div>
+
+          <!-- User dot -->
+          <div class="user-dot" style="top:188px;left:130px"></div>
+
+          <!-- Top bar -->
+          <div class="map-topbar">
+            <div class="map-search">🔍 <span>Parc Jaude...</span></div>
+            <div class="map-filter-btn">⚙</div>
+          </div>
+
+          <!-- Coins -->
+          <div class="coin-counter">
+            <span class="sc-sm"></span> 340 pièces
+          </div>
+
+          <!-- Legend -->
+          <div class="map-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div> Mon arbre</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--mg)"></div> Libre</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--burg)"></div> Pris</div>
+          </div>
+        </div>
+      </div>
+      <div class="app-nav">
+        <div class="nav-item active"><div class="nav-icon">🗺️</div>Carte</div>
+        <div class="nav-item"><div class="nav-icon">🌳</div>Mes arbres</div>
+        <div class="nav-item"><div class="nav-icon">⚔️</div>Missions</div>
+        <div class="nav-item"><div class="nav-icon">🏆</div>Classmt</div>
+        <div class="nav-item"><div class="nav-icon">👤</div>Profil</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 2: FICHE ARBRE ══ -->
+  <div class="screen-wrap">
+    <div class="screen-label">02 — Fiche arbre</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="status-icons"><span>●●●</span><span>█</span></div>
+        </div>
+
+        <div class="fiche-bg">
+          <!-- Tree hero image -->
+          <div class="tree-hero">
+            <div class="back-btn">←</div>
+            <div class="owner-badge-top">● Mon arbre</div>
+            <div class="tree-hero-glow"></div>
+            <div class="tree-hero-svg">
+              <svg width="90" height="120" viewBox="0 0 90 120" xmlns="http://www.w3.org/2000/svg">
+                <ellipse cx="45" cy="116" rx="28" ry="5" fill="#0A120A"/>
+                <rect x="40" y="82" width="8" height="34" fill="#4A3020"/>
+                <path d="M45,8 C58,6 72,16 75,34 C82,40 83,62 74,74 C78,88 68,97 56,97 C53,104 47,108 45,107 C43,108 37,104 34,97 C22,97 12,88 16,74 C7,62 8,40 15,34 C18,16 32,6 45,8Z" fill="#1C2B10"/>
+                <path d="M45,18 C56,16 68,24 71,40 C77,45 78,64 70,74 C73,85 64,93 54,94 C51,99 47,102 45,101 C43,102 39,99 36,94 C26,93 17,85 20,74 C12,64 13,45 19,40 C22,24 34,16 45,18Z" fill="#2D4219"/>
+                <path d="M45,28 C54,26 64,34 67,48 C71,52 72,68 65,76 C67,85 59,91 51,91 C48,96 46,99 45,98 C44,99 42,96 39,91 C31,91 23,85 25,76 C18,68 19,52 23,48 C26,34 36,26 45,28Z" fill="#3E5C24"/>
+                <path d="M45,40 C51,39 59,45 61,57 C64,60 64,73 58,79 C60,86 53,91 48,90 C46,94 45,96 45,95 C45,96 44,94 42,90 C37,91 30,86 32,79 C26,73 26,60 29,57 C31,45 39,39 45,40Z" fill="#4A6B2A"/>
+                <ellipse cx="37" cy="50" rx="8" ry="6" fill="#5A7A34" opacity="0.5"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="fiche-body">
+            <div class="fiche-name">Chêne pédonculé</div>
+            <div class="fiche-park">📍 Parc Central · Clermont-Ferrand</div>
+
+            <div class="stat-block">
+              <div class="stat-row-mini">
+                <span class="stat-lbl">Âge estimé</span>
+                <span class="stat-val">120 ans</span>
+              </div>
+              <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:90%"></div></div>
+            </div>
+            <div class="stat-block">
+              <div class="stat-row-mini">
+                <span class="stat-lbl">CO₂ / an</span>
+                <span class="stat-val">45 kg</span>
+              </div>
+              <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:75%"></div></div>
+            </div>
+            <div class="stat-block">
+              <div class="stat-row-mini">
+                <span class="stat-lbl">Rayon d'ombre</span>
+                <span class="stat-val">18 m</span>
+              </div>
+              <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:82%"></div></div>
+            </div>
+            <div class="stat-block">
+              <div class="stat-row-mini">
+                <span class="stat-lbl">Temp. zone</span>
+                <span class="stat-val">−2°C été</span>
+              </div>
+              <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:68%"></div></div>
+            </div>
+
+            <div class="value-card">
+              <div>
+                <div class="value-label">Valeur en rondins</div>
+                <div class="value-num">92 <span class="value-unit"><span class="wp-sm"></span></span></div>
+              </div>
+              <div style="text-align:right">
+                <div class="value-label">Défense</div>
+                <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--burg)">68%</div>
+              </div>
+            </div>
+
+            <div class="buy-btn" style="background:var(--burg)">
+              DÉFENDRE <span class="buy-cost">+ 50 pièces</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="app-nav">
+        <div class="nav-item"><div class="nav-icon">🗺️</div>Carte</div>
+        <div class="nav-item active"><div class="nav-icon">🌳</div>Mes arbres</div>
+        <div class="nav-item"><div class="nav-icon">⚔️</div>Missions</div>
+        <div class="nav-item"><div class="nav-icon">🏆</div>Classmt</div>
+        <div class="nav-item"><div class="nav-icon">👤</div>Profil</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 3: CLASSEMENT ══ -->
+  <div class="screen-wrap">
+    <div class="screen-label">03 — Classement</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar" style="color:var(--wht)">
+          <span>9:41</span>
+          <div class="status-icons"><span>●●●</span><span>█</span></div>
+        </div>
+
+        <div class="rank-bg">
+          <div class="rank-header-bar">
+            <div class="rank-title">CLASSEMENT</div>
+            <div class="rank-tabs">
+              <div class="rank-tab active">Global</div>
+              <div class="rank-tab">Parc</div>
+              <div class="rank-tab">Alliances</div>
+            </div>
+          </div>
+
+          <!-- Podium top 3 -->
+          <div class="podium">
+            <!-- 2nd -->
+            <div class="pod-item">
+              <div class="pod-avatar" style="width:36px;height:36px;background:rgba(138,128,112,0.2);border-color:#8A8070;font-size:18px">🦌</div>
+              <div class="pod-name">Nature<br>Hunter</div>
+              <div class="pod-pts" style="color:#8A8070"><span class="wp-sm"></span> 1 340</div>
+              <div class="pod-base" style="width:56px;height:36px;background:rgba(138,128,112,0.15);border:1px solid #8A8070">
+                <div class="pod-num" style="color:#8A8070">2</div>
+              </div>
+            </div>
+            <!-- 1st -->
+            <div class="pod-item" style="margin-bottom:-8px">
+              <div style="font-size:16px;margin-bottom:2px">👑</div>
+              <div class="pod-avatar" style="width:44px;height:44px;background:rgba(201,149,42,0.2);border-color:var(--gold);font-size:22px">🌲</div>
+              <div class="pod-name" style="color:var(--gold)">Forest<br>Master</div>
+              <div class="pod-pts"><span class="wp-sm"></span> 1 842</div>
+              <div class="pod-base" style="width:64px;height:48px;background:rgba(201,149,42,0.15);border:1px solid var(--gold)">
+                <div class="pod-num" style="color:var(--goldd);font-size:20px">1</div>
+              </div>
+            </div>
+            <!-- 3rd -->
+            <div class="pod-item">
+              <div class="pod-avatar" style="width:34px;height:34px;background:rgba(139,26,40,0.2);border-color:var(--burg);font-size:16px">🐺</div>
+              <div class="pod-name">Hector<br>_FF</div>
+              <div class="pod-pts" style="color:var(--burgl)"><span class="wp-sm"></span> 892</div>
+              <div class="pod-base" style="width:52px;height:28px;background:rgba(139,26,40,0.15);border:1px solid var(--burg)">
+                <div class="pod-num" style="color:var(--burg)">3</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="rank-list">
+            <div class="rank-row-mini">
+              <div class="rank-pos">4</div>
+              <div class="rank-av" style="background:rgba(255,255,255,0.06)">🦊</div>
+              <div class="rank-info">
+                <div class="rank-uname">UrbanWild22</div>
+                <div class="rank-trees-mini">1 arbre · Parc Jaude</div>
+              </div>
+              <div class="rank-score"><span class="wp-sm"></span> 645</div>
+            </div>
+            <div class="rank-row-mini">
+              <div class="rank-pos">5</div>
+              <div class="rank-av" style="background:rgba(255,255,255,0.06)">🦅</div>
+              <div class="rank-info">
+                <div class="rank-uname">PinRoyal</div>
+                <div class="rank-trees-mini">2 arbres · Compiègne</div>
+              </div>
+              <div class="rank-score"><span class="wp-sm"></span> 580</div>
+            </div>
+            <div class="rank-row-mini" style="background:rgba(201,149,42,0.05)">
+              <div class="rank-pos" style="color:var(--gold)">—</div>
+              <div class="rank-av" style="background:rgba(201,149,42,0.15);border:1px solid rgba(201,149,42,0.3)">😊</div>
+              <div class="rank-info">
+                <div class="rank-uname" style="color:var(--gold)">Toi</div>
+                <div class="rank-trees-mini">2 arbres · Jaude</div>
+              </div>
+              <div class="rank-score"><span class="wp-sm"></span> 892</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="app-nav">
+        <div class="nav-item"><div class="nav-icon">🗺️</div>Carte</div>
+        <div class="nav-item"><div class="nav-icon">🌳</div>Mes arbres</div>
+        <div class="nav-item"><div class="nav-icon">⚔️</div>Missions</div>
+        <div class="nav-item active"><div class="nav-icon">🏆</div>Classmt</div>
+        <div class="nav-item"><div class="nav-icon">👤</div>Profil</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 4: PROFIL ══ -->
+  <div class="screen-wrap">
+    <div class="screen-label">04 — Profil</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="status-icons"><span>●●●</span><span>█</span></div>
+        </div>
+
+        <div class="profil-bg">
+          <div class="profil-hero">
+            <div class="profil-avatar">🐺</div>
+            <div class="profil-name">Hector_FF</div>
+            <div class="profil-rank">🥉 Rang #3 · Alliance Forestiers</div>
+            <div class="profil-stats-row">
+              <div class="pstat">
+                <div class="pstat-icon">🌳</div>
+                <div class="pstat-num">2</div>
+                <div class="pstat-lbl">Arbres</div>
+              </div>
+              <div class="pstat">
+                <div class="pstat-icon">🗺️</div>
+                <div class="pstat-num">3</div>
+                <div class="pstat-lbl">Parcs</div>
+              </div>
+              <div class="pstat">
+                <div class="pstat-icon">⚔️</div>
+                <div class="pstat-num">12</div>
+                <div class="pstat-lbl">Missions</div>
+              </div>
+              <div class="pstat">
+                <div class="pstat-icon">🏆</div>
+                <div class="pstat-num">4</div>
+                <div class="pstat-lbl">Victoires</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Currencies -->
+          <div class="currency-row">
+            <div class="currency-card coins">
+              <div class="curr-label"><span class="sc-sm"></span> Pièces</div>
+              <div class="curr-amount gold">340</div>
+              <div class="curr-sublabel">Monnaie d'échange</div>
+            </div>
+            <div class="currency-card rondins">
+              <div class="curr-label"><span class="wp-sm"></span> Rondins</div>
+              <div class="curr-amount green">892</div>
+              <div class="curr-sublabel">Score · non échangeable</div>
+            </div>
+          </div>
+
+          <!-- My trees -->
+          <div class="section-head">Mes arbres</div>
+          <div class="tree-list">
+            <div class="tree-list-item">
+              <div class="tree-list-icon">🌳</div>
+              <div class="tree-list-info">
+                <div class="tree-list-name">Chêne pédonculé</div>
+                <div class="tree-list-park">Parc Central · 120 ans</div>
+                <div class="defense-bar"><div class="defense-fill" style="width:68%"></div></div>
+              </div>
+              <div class="tree-list-pts"><span class="wp-sm"></span> 92</div>
+            </div>
+            <div class="tree-list-item">
+              <div class="tree-list-icon">🌲</div>
+              <div class="tree-list-info">
+                <div class="tree-list-name">Bouleau verruqueux</div>
+                <div class="tree-list-park">Parc Jaude · 45 ans</div>
+                <div class="defense-bar"><div class="defense-fill" style="width:30%"></div></div>
+              </div>
+              <div class="tree-list-pts"><span class="wp-sm"></span> 47</div>
+            </div>
+            <div class="tree-list-item" style="border-style:dashed;opacity:0.5">
+              <div class="tree-list-icon" style="background:transparent;font-size:22px">＋</div>
+              <div class="tree-list-info">
+                <div class="tree-list-name" style="color:var(--gr)">S'approprier un arbre</div>
+                <div class="tree-list-park">Dépense tes pièces</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="app-nav">
+        <div class="nav-item"><div class="nav-icon">🗺️</div>Carte</div>
+        <div class="nav-item"><div class="nav-icon">🌳</div>Mes arbres</div>
+        <div class="nav-item"><div class="nav-icon">⚔️</div>Missions</div>
+        <div class="nav-item"><div class="nav-icon">🏆</div>Classmt</div>
+        <div class="nav-item active"><div class="nav-icon">👤</div>Profil</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /screens -->
+
+</body>
+</html>

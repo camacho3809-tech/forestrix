@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>FORESTRIX</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --dk:#070C05;--dk2:#0A110A;--dk3:#0E160B;
+  --g1:#1C2B10;--g2:#2D4219;--g3:#3E5C24;--g4:#5CB832;
+  --gold:#C9952A;--goldl:#E4AF3C;
+  --red:#C73045;--redl:#E05070;
+  --blue:#1A3A5C;--bluel:#4A9ED4;
+  --pur:#6B2A8C;--purl:#B060E0;
+  --wht:#D4C9A8;--gray:#7A7060;--gray2:#4A4438;--gray3:#2E2A24;
+  --grn:#6AC86A;--org:#D4731A;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:#0A0A0A;display:flex;justify-content:center;align-items:center;min-height:100vh;background:radial-gradient(ellipse at 20% 10%,rgba(28,43,16,.5),#060806 60%)}
+#phone{width:390px;height:844px;background:var(--dk2);border-radius:46px;overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:0 0 0 2px rgba(255,255,255,.07),0 50px 140px rgba(0,0,0,.9)}
+#sbar{height:50px;background:rgba(0,0,0,.25);display:flex;align-items:flex-end;padding:0 28px 10px;justify-content:space-between;flex-shrink:0;z-index:20;position:relative}
+.sbar-t{font-family:'Bebas Neue';font-size:17px;letter-spacing:1px;color:var(--wht)}
+.sbar-i{font-size:11px;color:var(--wht);display:flex;gap:5px;align-items:center}
+#screens{flex:1;overflow:hidden;position:relative}
+.screen{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;display:none;flex-direction:column;background:var(--dk2);scrollbar-width:none}
+.screen::-webkit-scrollbar{display:none}
+.screen.active{display:flex}
+#bnav{height:82px;background:rgba(5,5,5,.99);border-top:1px solid rgba(255,255,255,.05);display:flex;align-items:center;justify-content:space-around;padding:0 2px 14px;flex-shrink:0;z-index:20}
+.nb{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;padding:6px 6px;border-radius:10px;flex:1;transition:all .2s}
+.nb.active{background:rgba(62,92,36,.15)}
+.nb-i{font-size:19px;transition:transform .2s}
+.nb.active .nb-i{transform:scale(1.1)}
+.nb-l{font-family:'Barlow Condensed';font-size:7.5px;letter-spacing:1.5px;color:var(--gray);text-transform:uppercase;transition:color .2s}
+.nb.active .nb-l{color:var(--g4)}
+.sh{padding:16px 18px 10px;flex-shrink:0;display:flex;align-items:flex-start;justify-content:space-between}
+.sh .sub{font-family:'Barlow Condensed';font-size:9px;letter-spacing:3.5px;color:var(--gray);text-transform:uppercase}
+.sh .title{font-family:'Bebas Neue';font-size:28px;letter-spacing:2px;color:var(--wht)}
+.pill{display:flex;align-items:center;gap:5px;background:rgba(201,149,42,.1);border:1px solid rgba(201,149,42,.22);border-radius:20px;padding:5px 12px;font-family:'Bebas Neue';font-size:18px;color:var(--goldl)}
+/* MAP */
+#park-sel{margin:0 14px 8px;display:flex;gap:5px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+#park-sel::-webkit-scrollbar{display:none}
+.pk{flex-shrink:0;padding:6px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.04);cursor:pointer;transition:all .2s;font-family:'Barlow Condensed';font-size:10px;letter-spacing:1px;color:var(--gray);white-space:nowrap}
+.pk.active{background:rgba(62,92,36,.2);border-color:rgba(92,184,50,.35);color:var(--g4)}
+#gpsbanner{margin:0 14px 8px;border-radius:12px;padding:9px 13px;display:flex;align-items:center;gap:9px;cursor:pointer;border:1px solid rgba(139,26,40,.3);background:rgba(139,26,40,.08)}
+#gpsbanner.in{border-color:rgba(92,184,50,.3);background:rgba(62,92,36,.1)}
+.gd{width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0;animation:pulse 2s infinite}
+#gpsbanner.in .gd{background:var(--g4)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.gi{flex:1}.gi b{font-size:12px;font-weight:600;color:var(--wht);display:block}.gi span{font-size:10px;color:var(--gray)}
+.gbtn{font-family:'Barlow Condensed';font-size:9px;letter-spacing:2px;font-weight:700;background:rgba(255,255,255,.07);border:none;color:var(--wht);padding:5px 10px;border-radius:7px;cursor:pointer}
+#mapwrap{margin:0 14px;border-radius:16px;overflow:hidden;border:1px solid rgba(201,149,42,.07);flex-shrink:0;position:relative}
+#mapsvg{display:block;width:100%}
+/* PARK ACTIVITIES */
+.park-acts{margin:8px 14px 0;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pa{border-radius:11px;padding:10px 8px;text-align:center;cursor:pointer;border:1px solid;transition:all .2s;position:relative}
+.pa:active{transform:scale(.96)}
+.pa.act-coins{background:rgba(201,149,42,.07);border-color:rgba(201,149,42,.2)}
+.pa.act-event{background:rgba(107,42,140,.07);border-color:rgba(176,96,224,.2)}
+.pa.act-photo{background:rgba(74,158,212,.07);border-color:rgba(74,158,212,.2)}
+.pa-icon{font-size:20px;display:block;margin-bottom:3px}
+.pa-lbl{font-family:'Barlow Condensed';font-size:9px;letter-spacing:1px;color:var(--gray);text-transform:uppercase;display:block}
+.pa-val{font-family:'Bebas Neue';font-size:14px;display:block;margin-top:1px}
+.pa.disabled{opacity:.4;cursor:not-allowed}
+.pa-cd{font-size:8px;color:var(--gray2);letter-spacing:.5px;display:block;margin-top:1px}
+#earncd{text-align:center;font-size:8px;letter-spacing:1px;color:var(--gray2);padding:3px 0 6px}
+/* TREES */
+.tgrid{padding:0 14px 20px;display:flex;flex-direction:column;gap:9px}
+.tc{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;overflow:hidden;cursor:pointer;transition:all .2s}
+.tc:active{transform:scale(.985)}
+.tc.owned{border-color:rgba(92,184,50,.2);background:rgba(12,20,9,.5)}
+.tc.rival{border-color:rgba(199,48,69,.2);background:rgba(18,7,9,.5)}
+.tc-top{padding:12px 13px 0;display:flex;align-items:flex-start;gap:9px}
+.tc-emo{font-size:32px;flex-shrink:0;line-height:1}
+.tc-meta{flex:1}
+.tc-tier{font-family:'Barlow Condensed';font-size:8px;letter-spacing:3px;color:var(--gold);font-weight:700}
+.tc-name{font-family:'Bebas Neue';font-size:18px;letter-spacing:1px;color:var(--wht);line-height:1.1}
+.tc-spe{font-size:9.5px;color:var(--gray);margin-top:1px}
+.tc-rnd{text-align:right}
+.tc-rnum{font-family:'Bebas Neue';font-size:22px;color:var(--goldl);line-height:1}
+.tc-rnum small{font-size:10px}
+.tc-status{font-size:8.5px;text-align:right;margin-top:2px}
+.tc-bio{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:9px 13px}
+.bs{border-radius:9px;padding:7px 5px;text-align:center}
+.bs.co2{background:linear-gradient(135deg,rgba(92,184,50,.12),rgba(92,184,50,.04));border:1px solid rgba(92,184,50,.16)}
+.bs.temp{background:linear-gradient(135deg,rgba(74,158,212,.12),rgba(74,158,212,.04));border:1px solid rgba(74,158,212,.16)}
+.bs.ombre{background:linear-gradient(135deg,rgba(201,149,42,.12),rgba(201,149,42,.04));border:1px solid rgba(201,149,42,.16)}
+.bs.age{background:linear-gradient(135deg,rgba(176,96,224,.12),rgba(176,96,224,.04));border:1px solid rgba(176,96,224,.16)}
+.bs-icon{font-size:13px;display:block;margin-bottom:1px}
+.bs-val{font-family:'Bebas Neue';font-size:13px;color:var(--wht);display:block;line-height:1}
+.bs-lbl{font-size:7px;letter-spacing:.5px;color:var(--gray);display:block;margin-top:1px;text-transform:uppercase}
+.tc-stake{padding:0 13px 8px;font-size:9.5px;color:var(--gray)}
+.tc-stake span{color:var(--gold);font-weight:600}
+.tc-act{padding:7px 13px 11px;display:flex;gap:6px;border-top:1px solid rgba(255,255,255,.04)}
+.ab{flex:1;padding:8px;border-radius:8px;border:none;cursor:pointer;font-family:'Bebas Neue';font-size:12px;letter-spacing:1.5px;transition:all .15s;text-align:center}
+.ab:active{transform:scale(.95)}
+.ab:disabled{opacity:.3;cursor:not-allowed}
+.ab-cl{background:rgba(45,66,25,.8);color:var(--g4);border:1px solid rgba(92,184,50,.28)}
+.ab-df{background:rgba(26,58,92,.6);color:var(--bluel);border:1px solid rgba(74,158,212,.28)}
+.ab-at{background:rgba(139,26,40,.6);color:var(--redl);border:1px solid rgba(199,48,69,.28)}
+/* MISSIONS */
+.mlist{padding:0 14px 20px;display:flex;flex-direction:column;gap:8px}
+.mi{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:13px}
+.mi.done{border-color:rgba(92,184,50,.18);background:rgba(12,20,9,.5)}
+.mi-top{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
+.mi-badge{font-family:'Barlow Condensed';font-size:8px;letter-spacing:2px;font-weight:700;padding:2px 6px;border-radius:4px;flex-shrink:0;text-transform:uppercase}
+.bd{background:rgba(201,149,42,.1);color:var(--gold);border:1px solid rgba(201,149,42,.2)}
+.bw{background:rgba(74,158,212,.1);color:var(--bluel);border:1px solid rgba(74,158,212,.2)}
+.bt{background:rgba(92,184,50,.1);color:var(--g4);border:1px solid rgba(92,184,50,.2)}
+.bi{background:rgba(176,96,224,.1);color:var(--purl);border:1px solid rgba(176,96,224,.2)}
+.mi-body{flex:1}
+.mi-name{font-size:12px;font-weight:600;color:var(--wht)}
+.mi-desc{font-size:10px;color:var(--gray);line-height:1.4;margin-top:2px}
+.mi-rew{font-family:'Bebas Neue';font-size:15px;color:var(--goldl);flex-shrink:0}
+.pbar{height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+.pbar-f{height:100%;border-radius:2px;transition:width .5s}
+.mi-pl{display:flex;justify-content:space-between;font-size:9px;color:var(--gray);margin-top:4px}
+.mi-btn{width:100%;margin-top:8px;padding:8px;border-radius:8px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--g2),var(--g3));font-family:'Bebas Neue';font-size:13px;letter-spacing:2px;color:var(--wht);transition:all .2s}
+.mi-done{text-align:center;font-size:9.5px;color:var(--grn);margin-top:6px;letter-spacing:1px}
+.mis-regen{text-align:center;padding:20px;color:var(--gray);font-family:'Barlow Condensed';font-size:13px;letter-spacing:2px}
+/* CLASSEMENT */
+.ctabs{display:flex;margin:0 14px 12px;background:rgba(255,255,255,.04);border-radius:9px;padding:3px;gap:2px}
+.ct{flex:1;padding:6px;border-radius:7px;border:none;cursor:pointer;font-family:'Barlow Condensed';font-size:9.5px;letter-spacing:1.5px;color:var(--gray);background:none;transition:all .2s;text-transform:uppercase}
+.ct.active{background:rgba(62,92,36,.22);color:var(--g4)}
+.lbhead{margin:0 14px 6px;display:grid;grid-template-columns:28px 1fr 54px 44px;gap:5px;font-family:'Barlow Condensed';font-size:8px;letter-spacing:2px;color:var(--gray2);text-transform:uppercase}
+.lbrows{padding:0 14px;display:flex;flex-direction:column;gap:5px}
+.lbr{display:grid;grid-template-columns:28px 1fr 54px 44px;gap:5px;align-items:center;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);cursor:pointer;transition:all .2s}
+.lbr:active{transform:scale(.98)}
+.lbr.you{background:rgba(62,92,36,.1);border-color:rgba(92,184,50,.18)}
+.lbn{font-family:'Bebas Neue';font-size:16px;color:var(--gray)}
+.lbn.g1{color:#FFD700}.lbn.g2{color:#C0C0C0}.lbn.g3{color:#CD7F32}
+.lbpn{font-size:11.5px;font-weight:600;color:var(--wht)}
+.lbpm{font-size:9px;color:var(--gray)}
+.lbv{font-family:'Bebas Neue';font-size:15px;color:var(--goldl);text-align:right}
+.lbt{font-family:'Bebas Neue';font-size:13px;color:var(--gray);text-align:right}
+.you-tag{font-size:7.5px;font-family:'Barlow Condensed';letter-spacing:1px;background:rgba(92,184,50,.12);color:var(--g4);padding:1px 4px;border-radius:3px;margin-left:3px}
+/* CLANS */
+.clan-my{margin:0 14px 12px;border-radius:16px;overflow:hidden;border:1px solid rgba(92,184,50,.2);background:rgba(12,20,9,.5)}
+.clan-my-head{padding:14px;display:flex;align-items:center;gap:12px}
+.clan-badge-big{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;background:rgba(62,92,36,.3);border:1px solid rgba(92,184,50,.25)}
+.clan-myinfo{flex:1}
+.clan-myname{font-family:'Bebas Neue';font-size:22px;letter-spacing:2px;color:var(--wht)}
+.clan-mydesc{font-size:10px;color:var(--gray);margin-top:2px}
+.clan-mystats{display:flex;gap:12px;margin-top:6px}
+.cms{font-family:'Barlow Condensed';font-size:10px;color:var(--gray)}
+.cms b{color:var(--wht)}
+.clan-trophy-big{text-align:right;font-family:'Bebas Neue';font-size:26px;color:var(--goldl)}
+.clan-trophy-big small{font-family:'Barlow Condensed';font-size:9px;letter-spacing:1px;color:var(--gray);display:block}
+.clan-war{margin:0 14px;background:linear-gradient(135deg,rgba(139,26,40,.2),rgba(199,48,69,.1));border:1px solid rgba(199,48,69,.25);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.clan-war-title{font-family:'Bebas Neue';font-size:14px;letter-spacing:2px;color:var(--redl);margin-bottom:6px}
+.clan-war-info{font-size:10.5px;color:var(--gray);line-height:1.5}
+.war-score{display:flex;gap:8px;align-items:center;margin-top:8px}
+.war-mine{font-family:'Bebas Neue';font-size:22px;color:var(--g4)}
+.war-vs{font-family:'Barlow Condensed';font-size:10px;letter-spacing:2px;color:var(--gray)}
+.war-them{font-family:'Bebas Neue';font-size:22px;color:var(--redl)}
+.clan-members-list{padding:0 14px;margin-bottom:10px}
+.sec-lbl{font-family:'Barlow Condensed';font-size:8.5px;letter-spacing:4px;color:var(--gray);text-transform:uppercase;margin-bottom:8px}
+.cmrow{display:flex;align-items:center;gap:9px;padding:9px 11px;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid rgba(255,255,255,.05);margin-bottom:5px}
+.cmrank{font-size:16px;flex-shrink:0}
+.cmname{font-size:12px;font-weight:600;color:var(--wht);flex:1}
+.cmrnd{font-family:'Bebas Neue';font-size:14px;color:var(--gold)}
+.cmtrees{font-size:9.5px;color:var(--gray)}
+.cmme{border-color:rgba(92,184,50,.2)}
+/* CHAT */
+.chat-wrap{margin:0 14px;background:rgba(255,255,255,.02);border-radius:14px;border:1px solid rgba(255,255,255,.06);overflow:hidden;margin-bottom:14px}
+.chat-head{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:8px}
+.chat-head span{font-family:'Barlow Condensed';font-size:10px;letter-spacing:2px;color:var(--gray);text-transform:uppercase;flex:1}
+.chat-msgs{padding:12px;display:flex;flex-direction:column;gap:8px;max-height:200px;overflow-y:auto;scrollbar-width:none}
+.chat-msgs::-webkit-scrollbar{display:none}
+.cmsg{display:flex;flex-direction:column;max-width:80%}
+.cmsg.mine{align-self:flex-end;align-items:flex-end}
+.cmsg.them{align-self:flex-start}
+.cmsg-author{font-family:'Barlow Condensed';font-size:8.5px;letter-spacing:1px;color:var(--gray);margin-bottom:2px}
+.cmsg-bubble{padding:7px 11px;border-radius:12px;font-size:11.5px;line-height:1.4}
+.cmsg.mine .cmsg-bubble{background:rgba(62,92,36,.35);color:var(--wht);border-radius:12px 12px 3px 12px}
+.cmsg.them .cmsg-bubble{background:rgba(255,255,255,.06);color:var(--wht);border-radius:12px 12px 12px 3px}
+.cmsg-time{font-size:8px;color:var(--gray2);margin-top:2px}
+.chat-input{padding:8px 12px;border-top:1px solid rgba(255,255,255,.05);display:flex;gap:7px;align-items:center}
+.chat-input input{flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:7px 12px;color:var(--wht);font-family:'Barlow';font-size:11.5px;outline:none}
+.chat-input input::placeholder{color:var(--gray2)}
+.chat-input button{background:var(--g3);border:none;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;flex-shrink:0}
+.clan-list-other{padding:0 14px 14px;display:flex;flex-direction:column;gap:8px}
+.oc{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;overflow:hidden;cursor:pointer;transition:all .2s}
+.oc:active{transform:scale(.985)}
+.oc-head{padding:11px 13px;display:flex;align-items:center;gap:10px}
+.oc-badge{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.oc-info{flex:1}
+.oc-name{font-family:'Bebas Neue';font-size:17px;letter-spacing:1.5px;color:var(--wht)}
+.oc-desc{font-size:9.5px;color:var(--gray);margin-top:1px}
+.oc-stats{display:flex;gap:10px;margin-top:4px}
+.oc-st{font-family:'Barlow Condensed';font-size:9.5px;color:var(--gray)}
+.oc-st b{color:var(--wht)}
+.oc-trophy{font-family:'Bebas Neue';font-size:20px;color:var(--goldl);text-align:right}
+.oc-trophy small{font-family:'Barlow Condensed';font-size:8px;letter-spacing:1px;color:var(--gray);display:block}
+.oc-members{padding:0 13px 11px;display:flex;gap:5px;flex-wrap:wrap}
+.ocm{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.04);border-radius:7px;padding:4px 7px}
+.ocm-rank{font-size:12px}.ocm-name{font-size:9.5px;color:var(--wht);font-weight:600}
+.oc-join{padding:0 13px 11px;display:flex;gap:6px}
+.btn-join{flex:1;padding:8px;border-radius:8px;border:none;cursor:pointer;font-family:'Bebas Neue';font-size:13px;letter-spacing:2px;transition:all .15s}
+.btn-join-g{background:linear-gradient(135deg,var(--g2),var(--g3));color:var(--wht)}
+.btn-join-o{background:rgba(201,149,42,.1);color:var(--gold);border:1px solid rgba(201,149,42,.25)}
+.os-badge{font-family:'Barlow Condensed';font-size:8.5px;letter-spacing:2px;padding:3px 7px;border-radius:5px;flex-shrink:0}
+.os-open{background:rgba(92,184,50,.1);color:var(--g4);border:1px solid rgba(92,184,50,.2)}
+.os-invite{background:rgba(201,149,42,.1);color:var(--gold);border:1px solid rgba(201,149,42,.2)}
+.os-closed{background:rgba(199,48,69,.1);color:var(--redl);border:1px solid rgba(199,48,69,.2)}
+/* ÉCHANGES */
+.ech-list{padding:0 14px 20px;display:flex;flex-direction:column;gap:8px}
+.ech-item{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:13px;transition:all .2s;cursor:pointer}
+.ech-item:active{transform:scale(.985)}
+.ech-item.sell{border-color:rgba(92,184,50,.15)}
+.ech-item.buy{border-color:rgba(74,158,212,.15)}
+.ech-item.swap{border-color:rgba(201,149,42,.15)}
+.ech-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.ech-type{font-family:'Barlow Condensed';font-size:8px;letter-spacing:2px;font-weight:700;padding:2px 6px;border-radius:4px;text-transform:uppercase;flex-shrink:0}
+.et-sell{background:rgba(92,184,50,.1);color:var(--g4);border:1px solid rgba(92,184,50,.2)}
+.et-buy{background:rgba(74,158,212,.1);color:var(--bluel);border:1px solid rgba(74,158,212,.2)}
+.et-swap{background:rgba(201,149,42,.1);color:var(--gold);border:1px solid rgba(201,149,42,.2)}
+.ech-tree-name{font-family:'Bebas Neue';font-size:17px;color:var(--wht);flex:1}
+.ech-price{font-family:'Bebas Neue';font-size:22px;color:var(--goldl)}
+.ech-price small{font-family:'Barlow Condensed';font-size:8.5px;letter-spacing:1px;color:var(--gray);display:block;text-align:right}
+.ech-info{font-size:10px;color:var(--gray);line-height:1.4;margin-bottom:8px}
+.ech-seller{font-size:9.5px;color:var(--gray2)}
+.ech-seller b{color:var(--gray)}
+.ech-actions{display:flex;gap:6px}
+.ech-btn{flex:1;padding:8px;border-radius:8px;border:none;cursor:pointer;font-family:'Bebas Neue';font-size:12px;letter-spacing:2px;transition:all .15s}
+.ech-btn:active{transform:scale(.95)}
+.ech-btn:disabled{opacity:.3;cursor:not-allowed}
+.ech-btn-buy{background:linear-gradient(135deg,var(--g2),var(--g3));color:var(--wht)}
+.ech-btn-cancel{background:rgba(255,255,255,.06);color:var(--gray)}
+.ech-btn-prop{background:rgba(201,149,42,.12);color:var(--gold);border:1px solid rgba(201,149,42,.2)}
+.ech-create{margin:0 14px 12px;padding:12px 14px;background:rgba(62,92,36,.08);border:1px dashed rgba(92,184,50,.2);border-radius:12px;cursor:pointer;text-align:center;transition:all .2s}
+.ech-create:active{transform:scale(.98)}
+.ech-create-icon{font-size:24px;margin-bottom:4px}
+.ech-create-lbl{font-family:'Barlow Condensed';font-size:11px;letter-spacing:2px;color:var(--g4);text-transform:uppercase}
+/* PROFIL */
+.prof-hero{margin:0 14px 12px;border-radius:16px;background:linear-gradient(135deg,rgba(28,43,16,.85),rgba(45,66,25,.7));border:1px solid rgba(92,184,50,.14);padding:18px}
+.prof-ava{font-size:44px;margin-bottom:8px}
+.prof-name{font-family:'Bebas Neue';font-size:24px;letter-spacing:2px;color:var(--wht)}
+.prof-rank{display:inline-flex;align-items:center;gap:5px;background:rgba(62,92,36,.2);border:1px solid rgba(92,184,50,.18);border-radius:20px;padding:3px 10px;margin-top:4px}
+.prof-rank span{font-family:'Barlow Condensed';font-size:10px;letter-spacing:2px;color:var(--g4)}
+.prof-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}
+.pgi{background:rgba(255,255,255,.04);border-radius:8px;padding:8px;text-align:center}
+.pgi-v{font-family:'Bebas Neue';font-size:20px;color:var(--wht)}
+.pgi-l{font-size:8px;color:var(--gray2);letter-spacing:1px;text-transform:uppercase;margin-top:1px}
+.econ-sec{padding:0 14px;margin-bottom:12px}
+.econ-card{background:rgba(255,255,255,.03);border-radius:12px;padding:13px;border:1px solid rgba(255,255,255,.05)}
+.er{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.er:last-child{border-bottom:none}
+.er-l{font-size:11px;color:var(--gray)}
+.er-v{font-family:'Bebas Neue';font-size:16px;color:var(--goldl)}
+/* MODAL */
+#moverlay{position:absolute;inset:0;z-index:50;background:rgba(0,0,0,.82);backdrop-filter:blur(10px);display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .25s}
+#moverlay.open{opacity:1;pointer-events:all}
+#msheet{width:100%;background:var(--dk3);border-radius:22px 22px 0 0;border-top:1px solid rgba(255,255,255,.07);padding:0 17px 28px;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);max-height:88%;overflow-y:auto;scrollbar-width:none}
+#moverlay.open #msheet{transform:translateY(0)}
+.mhandle{width:32px;height:4px;background:rgba(255,255,255,.12);border-radius:2px;margin:11px auto 16px}
+.mth{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
+.mti{font-size:48px}
+.mtm{flex:1}
+.mt-tier{font-family:'Barlow Condensed';font-size:8.5px;letter-spacing:3px;color:var(--gold);font-weight:700}
+.mt-name{font-family:'Bebas Neue';font-size:24px;letter-spacing:2px;color:var(--wht);line-height:1;margin-top:1px}
+.mt-spe{font-size:11px;color:var(--gray);margin-top:2px}
+.mt-rnd{font-family:'Bebas Neue';font-size:32px;color:var(--goldl);text-align:right;line-height:1}
+.mt-rnd small{font-size:10px;color:var(--gray);display:block;text-align:right}
+.mbio-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-bottom:14px}
+.mbs{border-radius:11px;padding:12px 13px;position:relative}
+.mbs.co2{background:linear-gradient(135deg,rgba(92,184,50,.14),rgba(92,184,50,.04));border:1px solid rgba(92,184,50,.18)}
+.mbs.temp{background:linear-gradient(135deg,rgba(74,158,212,.14),rgba(74,158,212,.04));border:1px solid rgba(74,158,212,.18)}
+.mbs.ombre{background:linear-gradient(135deg,rgba(201,149,42,.14),rgba(201,149,42,.04));border:1px solid rgba(201,149,42,.18)}
+.mbs.age{background:linear-gradient(135deg,rgba(176,96,224,.14),rgba(176,96,224,.04));border:1px solid rgba(176,96,224,.18)}
+.mbs-icon{font-size:20px;margin-bottom:4px}
+.mbs-val{font-family:'Bebas Neue';font-size:20px;color:var(--wht);display:block}
+.mbs-lbl{font-size:9.5px;color:var(--gray);margin-top:1px}
+.mbs-sub{font-size:8.5px;color:var(--gray2);margin-top:2px;line-height:1.4}
+.mstake{background:rgba(255,255,255,.04);border-radius:9px;padding:11px 13px;margin-bottom:12px}
+.mstake-r{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.mstake-lbl{font-family:'Barlow Condensed';font-size:9px;letter-spacing:2px;color:var(--gray);text-transform:uppercase}
+.mstake-val{font-family:'Bebas Neue';font-size:16px;color:var(--gold)}
+.mstake-exp{font-size:10px;color:var(--gray);line-height:1.5}
+.mowner{display:flex;align-items:center;gap:8px;padding:9px 11px;background:rgba(255,255,255,.03);border-radius:8px;margin-bottom:13px}
+.mowner-ava{font-size:20px}
+.mowner-n{font-size:11.5px;font-weight:600;color:var(--wht)}
+.mowner-s{font-size:9.5px;color:var(--gray);margin-top:1px}
+.macts{display:flex;flex-direction:column;gap:7px}
+.btn-f{width:100%;padding:13px;border-radius:11px;border:none;cursor:pointer;font-family:'Bebas Neue';font-size:15px;letter-spacing:2px;display:flex;justify-content:space-between;align-items:center;transition:all .15s}
+.btn-f:active{transform:scale(.98)}
+.btn-f:disabled{opacity:.3;cursor:not-allowed}
+.btn-f .cost{font-family:'Barlow';font-size:10.5px;opacity:.8}
+.btn-fc{background:linear-gradient(135deg,rgba(45,66,25,.95),rgba(62,92,36,.9));color:var(--wht);border:1px solid rgba(92,184,50,.28)}
+.btn-fd{background:linear-gradient(135deg,rgba(26,58,92,.9),rgba(42,90,140,.8));color:#a0cfed;border:1px solid rgba(74,158,212,.3)}
+.btn-fa{background:linear-gradient(135deg,rgba(99,16,28,.9),rgba(139,26,40,.9));color:#f09090;border:1px solid rgba(199,48,69,.35)}
+.mwarn{font-size:10px;color:var(--gray);text-align:center;padding:5px 0;line-height:1.5}
+#mmsg{text-align:center;font-size:10.5px;min-height:14px;margin-top:6px;padding:6px;border-radius:7px}
+.msg-err{background:rgba(139,26,40,.15);color:var(--redl)}
+.msg-ok{background:rgba(62,92,36,.15);color:var(--grn)}
+/* PLAYER PROFILE MODAL */
+.pp-head{text-align:center;padding:6px 0 16px}
+.pp-ava{font-size:52px;margin-bottom:6px}
+.pp-name{font-family:'Bebas Neue';font-size:26px;letter-spacing:2px;color:var(--wht)}
+.pp-rank{font-family:'Barlow Condensed';font-size:10px;letter-spacing:2px;color:var(--g4)}
+.pp-clan{font-size:10.5px;color:var(--gray);margin-top:4px}
+.pp-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.pp-stat{background:rgba(255,255,255,.04);border-radius:9px;padding:9px;text-align:center}
+.pp-stat-v{font-family:'Bebas Neue';font-size:22px;color:var(--wht)}
+.pp-stat-l{font-size:8px;color:var(--gray2);letter-spacing:1px;text-transform:uppercase;margin-top:1px}
+.pp-trees{display:flex;flex-direction:column;gap:6px}
+.ppt{display:flex;align-items:center;gap:9px;padding:9px 11px;background:rgba(255,255,255,.03);border-radius:9px;border:1px solid rgba(255,255,255,.05)}
+.ppt-emo{font-size:22px;flex-shrink:0}
+.ppt-info{flex:1}
+.ppt-name{font-size:11.5px;font-weight:600;color:var(--wht)}
+.ppt-spe{font-size:9.5px;color:var(--gray)}
+.ppt-rnd{font-family:'Bebas Neue';font-size:18px;color:var(--goldl)}
+/* TOAST */
+#toast{position:absolute;top:64px;left:50%;transform:translateX(-50%) translateY(-12px);background:rgba(8,14,6,.98);border:1px solid rgba(201,149,42,.26);border-radius:26px;padding:7px 18px;font-family:'Barlow Condensed';font-size:11.5px;letter-spacing:.5px;color:var(--wht);z-index:100;opacity:0;transition:all .3s;white-space:nowrap;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div id="phone">
+<div id="sbar">
+  <div class="sbar-t" id="clock">9:41</div>
+  <div class="sbar-i"><span>📶</span><span>🔋</span></div>
+</div>
+<div id="screens">
+
+<!-- ═══ CARTE ═══ -->
+<div class="screen active" id="screen-map">
+  <div class="sh">
+    <div><div class="sub">Mode terrain</div><div class="title">CARTE</div></div>
+    <div class="pill">💰 <span id="coins-map">200</span></div>
+  </div>
+  <div id="park-sel"></div>
+  <div id="gpsbanner">
+    <div class="gd" id="gd"></div>
+    <div class="gi"><b id="gps-t">Hors du parc</b><span id="gps-s">Appuyez pour entrer</span></div>
+    <button class="gbtn" id="gbtn">ENTRER</button>
+  </div>
+  <div id="mapwrap"><svg id="mapsvg" viewBox="0 0 358 250" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="bg" cx="50%" cy="50%"><stop offset="0%" stop-color="#182810" stop-opacity=".8"/><stop offset="100%" stop-color="#080e05" stop-opacity=".95"/></radialGradient>
+      <radialGradient id="wg" cx="50%" cy="50%"><stop offset="0%" stop-color="#0d2035"/><stop offset="100%" stop-color="#070f1a"/></radialGradient>
+      <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <rect width="358" height="250" fill="url(#bg)"/>
+    <!-- Terrain zones -->
+    <ellipse cx="85" cy="75" rx="68" ry="52" fill="rgba(30,52,16,.6)" stroke="rgba(62,92,36,.12)" stroke-width="1"/>
+    <ellipse cx="275" cy="75" rx="62" ry="48" fill="rgba(26,47,14,.55)" stroke="rgba(62,92,36,.1)" stroke-width="1"/>
+    <ellipse cx="180" cy="195" rx="78" ry="42" fill="rgba(22,42,11,.5)" stroke="rgba(62,92,36,.1)" stroke-width="1"/>
+    <ellipse cx="48" cy="190" rx="38" ry="28" fill="rgba(20,38,10,.45)"/>
+    <ellipse cx="320" cy="185" rx="35" ry="30" fill="rgba(20,38,10,.45)"/>
+    <!-- Main paths -->
+    <path d="M0 125 Q 85 108 179 122 Q 255 133 358 108" stroke="rgba(90,68,28,.5)" stroke-width="20" fill="none" stroke-linecap="round"/>
+    <path d="M179 122 Q 174 180 162 248" stroke="rgba(80,60,22,.4)" stroke-width="14" fill="none" stroke-linecap="round"/>
+    <path d="M179 122 Q 238 65 316 38" stroke="rgba(72,54,18,.35)" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path d="M179 122 Q 118 60 66 32" stroke="rgba(72,54,18,.3)" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <!-- Path lines texture -->
+    <path d="M0 123 Q 85 106 179 120" stroke="rgba(110,85,30,.18)" stroke-width="1.5" fill="none" stroke-dasharray="7 9"/>
+    <path d="M179 120 Q 255 131 358 106" stroke="rgba(110,85,30,.18)" stroke-width="1.5" fill="none" stroke-dasharray="7 9"/>
+    <!-- Water -->
+    <ellipse cx="179" cy="122" rx="24" ry="19" fill="url(#wg)" stroke="rgba(30,90,140,.45)" stroke-width="2"/>
+    <ellipse cx="179" cy="122" rx="14" ry="11" fill="rgba(15,55,100,.7)"/>
+    <text x="179" y="127" text-anchor="middle" style="font-size:11px">⛲</text>
+    <!-- Park features -->
+    <g id="act-bench" onclick="doActivity('bench')" style="cursor:pointer">
+      <circle cx="58" cy="205" r="13" fill="rgba(201,149,42,.1)" stroke="rgba(201,149,42,.3)" stroke-width="1.5"/>
+      <text x="58" y="209" text-anchor="middle" style="font-size:12px">🪑</text>
+    </g>
+    <g id="act-kiosk" onclick="doActivity('kiosk')" style="cursor:pointer">
+      <circle cx="308" cy="52" r="13" fill="rgba(107,42,140,.1)" stroke="rgba(176,96,224,.3)" stroke-width="1.5"/>
+      <text x="308" y="56" text-anchor="middle" style="font-size:11px">🏛</text>
+    </g>
+    <g id="act-event" onclick="doActivity('event')" style="cursor:pointer">
+      <circle cx="315" cy="195" r="13" fill="rgba(74,158,212,.1)" stroke="rgba(74,158,212,.3)" stroke-width="1.5" id="event-ring"/>
+      <text x="315" y="199" text-anchor="middle" style="font-size:11px" id="event-icon">📸</text>
+    </g>
+    <!-- Compass -->
+    <text x="340" y="240" text-anchor="middle" style="font-size:8.5px;fill:rgba(100,90,70,.4)">N↑</text>
+    <line x1="16" y1="240" x2="52" y2="240" stroke="rgba(100,90,70,.3)" stroke-width="1"/>
+    <text x="34" y="235" text-anchor="middle" style="font-size:7px;fill:rgba(100,90,70,.35)">100m</text>
+    <g id="mtlayer"></g>
+  </svg></div>
+  <div class="park-acts">
+    <div class="pa act-coins" id="pa-coins" onclick="earnCoins()">
+      <span class="pa-icon">💰</span>
+      <span class="pa-lbl">Collecter</span>
+      <span class="pa-val" style="color:var(--goldl)" id="earn-badge">+15</span>
+      <span class="pa-cd" id="earncd"></span>
+    </div>
+    <div class="pa act-event disabled" id="pa-event" onclick="doActivity('bench')">
+      <span class="pa-icon">🎯</span>
+      <span class="pa-lbl">Événement</span>
+      <span class="pa-val" style="color:var(--purl)">+50</span>
+      <span class="pa-cd" id="event-cd">Entrer d'abord</span>
+    </div>
+    <div class="pa act-photo disabled" id="pa-photo" onclick="doPhoto()">
+      <span class="pa-icon">📸</span>
+      <span class="pa-lbl">Photo arbre</span>
+      <span class="pa-val" style="color:var(--bluel)">+80</span>
+      <span class="pa-cd" id="photo-cd">Mission</span>
+    </div>
+  </div>
+  <div class="map-leg" style="padding:6px 14px 12px;display:flex;gap:12px;flex-wrap:wrap;font-family:'Barlow Condensed';font-size:9px;letter-spacing:1px;color:var(--gray2)">
+    <span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#5CB832;margin-right:3px"></span>Vos arbres</span>
+    <span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#C73045;margin-right:3px"></span>Rivaux</span>
+    <span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#4A4438;margin-right:3px"></span>Libres</span>
+    <span>🪑 Banc  🏛 Kiosque  📸 Événement</span>
+  </div>
+</div>
+
+<!-- ═══ ARBRES ═══ -->
+<div class="screen" id="screen-trees">
+  <div class="sh">
+    <div><div class="sub">Territoire · <span id="park-name-t">Parc Central</span></div><div class="title">ARBRES</div></div>
+    <div style="text-align:right">
+      <div style="font-family:'Bebas Neue';font-size:24px;color:var(--goldl)" id="rnd-big">0 🪵</div>
+      <div style="font-size:8.5px;color:var(--gray);letter-spacing:1px" id="rank-lbl">GRAINE</div>
+    </div>
+  </div>
+  <div class="tgrid" id="tgrid"></div>
+</div>
+
+<!-- ═══ MISSIONS ═══ -->
+<div class="screen" id="screen-mis">
+  <div class="sh">
+    <div><div class="sub">Défis actifs</div><div class="title">MISSIONS</div></div>
+    <div class="pill">💰 <span id="coins-mis">200</span></div>
+  </div>
+  <div class="mlist" id="mlist"></div>
+</div>
+
+<!-- ═══ CLASSEMENT ═══ -->
+<div class="screen" id="screen-rank">
+  <div class="sh"><div><div class="sub">Compétition</div><div class="title">CLASSEMENT</div></div></div>
+  <div class="ctabs">
+    <button class="ct active" onclick="setLbTab('players',this)">Joueurs</button>
+    <button class="ct" onclick="setLbTab('parks',this)">Parcs</button>
+  </div>
+  <div id="lb-players">
+    <div class="lbhead"><div>#</div><div>Joueur</div><div>Rondins</div><div>Arbres</div></div>
+    <div class="lbrows" id="lb-list"></div>
+  </div>
+  <div id="lb-parks" style="display:none;padding:0 14px 16px">
+    <div style="display:flex;flex-direction:column;gap:5px" id="lb-parks-list"></div>
+  </div>
+</div>
+
+<!-- ═══ CLANS ═══ -->
+<div class="screen" id="screen-clans">
+  <div class="sh"><div><div class="sub">Mon clan</div><div class="title">CLANS</div></div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <div style="font-family:'Bebas Neue';font-size:18px;color:var(--goldl)">8 420 🏆</div>
+    </div>
+  </div>
+  <!-- My clan -->
+  <div class="clan-my">
+    <div class="clan-my-head">
+      <div class="clan-badge-big">🌿</div>
+      <div class="clan-myinfo">
+        <div class="clan-myname">Les Verts du Plateau</div>
+        <div class="clan-mydesc">Protecteurs des forêts urbaines</div>
+        <div class="clan-mystats">
+          <div class="cms"><b>28</b>/30 membres</div>
+          <div class="cms os-badge os-open">🔓 OUVERT</div>
+        </div>
+      </div>
+      <div class="clan-trophy-big">8 420<small>🏆 trophées</small></div>
+    </div>
+  </div>
+  <!-- Guerre en cours -->
+  <div class="clan-war">
+    <div class="clan-war-title">⚔️ GUERRE EN COURS — 14h restantes</div>
+    <div class="clan-war-info">vs <strong style="color:var(--redl)">La Guilde Sombre</strong> · Chaque arbre changement de main vaut ×2 Rondins</div>
+    <div class="war-score">
+      <div class="war-mine">Les Verts <span style="color:var(--g4)">12</span></div>
+      <div class="war-vs">VS</div>
+      <div class="war-them"><span>9</span> Guilde</div>
+    </div>
+  </div>
+  <!-- Members -->
+  <div class="clan-members-list">
+    <div class="sec-lbl">Membres</div>
+    <div class="cmrow cmme"><div class="cmrank">👑</div><div class="cmname">Ranger_Noir<span class="you-tag" style="margin-left:5px">VOUS</span></div><div style="text-align:right"><div class="cmrnd" id="cm-myrnd">0 🪵</div><div class="cmtrees" id="cm-mytrees">0 arbres</div></div></div>
+    <div class="cmrow"><div class="cmrank">⭐</div><div class="cmname">SylvanKing42</div><div style="text-align:right"><div class="cmrnd">612 🪵</div><div class="cmtrees">4 arbres</div></div></div>
+    <div class="cmrow"><div class="cmrank">⭐</div><div class="cmname">ForêtFée</div><div style="text-align:right"><div class="cmrnd">580 🪵</div><div class="cmtrees">3 arbres</div></div></div>
+    <div class="cmrow"><div class="cmrank">🌿</div><div class="cmname">PinVert_63</div><div style="text-align:right"><div class="cmrnd">445 🪵</div><div class="cmtrees">2 arbres</div></div></div>
+    <div class="cmrow"><div class="cmrank">🌿</div><div class="cmname">Verdure_77</div><div style="text-align:right"><div class="cmrnd">380 🪵</div><div class="cmtrees">2 arbres</div></div></div>
+  </div>
+  <!-- Clan chat -->
+  <div class="chat-wrap">
+    <div class="chat-head">
+      <span>💬 CHAT DU CLAN</span>
+      <div style="width:7px;height:7px;border-radius:50%;background:var(--g4)"></div>
+    </div>
+    <div class="chat-msgs" id="chat-msgs">
+      <div class="cmsg them"><div class="cmsg-author">SylvanKing42</div><div class="cmsg-bubble">Quelqu'un peut défendre le Chêne Monarque ? Il est à 12% 😬</div><div class="cmsg-time">14:32</div></div>
+      <div class="cmsg them"><div class="cmsg-author">ForêtFée</div><div class="cmsg-bubble">J'y vais ce soir ! 🌿</div><div class="cmsg-time">14:35</div></div>
+      <div class="cmsg mine"><div class="cmsg-author">Moi</div><div class="cmsg-bubble">Je l'ai défendu — mise +50💰 ✅</div><div class="cmsg-time">14:41</div></div>
+      <div class="cmsg them"><div class="cmsg-author">PinVert_63</div><div class="cmsg-bubble">Attention MarcelVert_63 va attaquer le Parc du Nord ce soir 💀</div><div class="cmsg-time">15:02</div></div>
+      <div class="cmsg them"><div class="cmsg-author">SylvanKing42</div><div class="cmsg-bubble">On se retrouve tous demain matin au Parc Central ? Mission alliance ! 🎯</div><div class="cmsg-time">15:18</div></div>
+    </div>
+    <div class="chat-input">
+      <input type="text" id="chat-in" placeholder="Message…" onkeydown="if(event.key==='Enter')sendMsg()">
+      <button onclick="sendMsg()">➤</button>
+    </div>
+  </div>
+  <!-- Other clans -->
+  <div class="clan-members-list" style="padding:0 14px 8px">
+    <div class="sec-lbl">Autres clans</div>
+  </div>
+  <div class="clan-list-other" id="clan-list-other"></div>
+</div>
+
+<!-- ═══ ÉCHANGES ═══ -->
+<div class="screen" id="screen-ech">
+  <div class="sh"><div><div class="sub">Marché</div><div class="title">ÉCHANGES</div></div><div class="pill">💰 <span id="coins-ech">200</span></div></div>
+  <div class="ech-create" onclick="toast('Fonctionnalité bientôt disponible !')">
+    <div class="ech-create-icon">➕</div>
+    <div class="ech-create-lbl">Créer une offre d'échange</div>
+  </div>
+  <div style="padding:0 14px;margin-bottom:8px">
+    <div class="ctabs">
+      <button class="ct active" onclick="setEchTab('all',this)">Tout</button>
+      <button class="ct" onclick="setEchTab('vente',this)">Vente</button>
+      <button class="ct" onclick="setEchTab('achat',this)">Achat</button>
+      <button class="ct" onclick="setEchTab('swap',this)">Troc</button>
+    </div>
+  </div>
+  <div class="ech-list" id="ech-list"></div>
+</div>
+
+<!-- ═══ PROFIL ═══ -->
+<div class="screen" id="screen-profil">
+  <div class="sh"><div><div class="sub">Identité</div><div class="title">PROFIL</div></div><div class="pill">💰 <span id="coins-pro">200</span></div></div>
+  <div class="prof-hero">
+    <div class="prof-ava">🐺</div>
+    <div class="prof-name">Ranger_Noir</div>
+    <div class="prof-rank"><span id="prof-rank">🌱 GRAINE</span></div>
+    <div style="font-size:10px;color:var(--gray);margin-top:8px">🌿 Clan : <span style="color:var(--g4)">Les Verts du Plateau</span></div>
+    <div class="prof-grid">
+      <div class="pgi"><div class="pgi-v" id="ps-trees">0</div><div class="pgi-l">Arbres</div></div>
+      <div class="pgi"><div class="pgi-v" id="ps-mis">0</div><div class="pgi-l">Missions</div></div>
+      <div class="pgi"><div class="pgi-v" id="ps-vic">0</div><div class="pgi-l">Victoires</div></div>
+    </div>
+  </div>
+  <div class="econ-sec">
+    <div class="sec-lbl">Économie</div>
+    <div class="econ-card">
+      <div class="er"><div class="er-l">💰 Pièces</div><div class="er-v" id="ec-coins">200</div></div>
+      <div class="er"><div class="er-l">🪵 Rondins fixes</div><div class="er-v" id="ec-rfx">0</div></div>
+      <div class="er"><div class="er-l">📈 Rondins passifs</div><div class="er-v" id="ec-rps">0</div></div>
+      <div class="er" style="border:none"><div class="er-l">⚡ Taux</div><div class="er-v" style="color:var(--grn)" id="ec-rate">0/h</div></div>
+    </div>
+  </div>
+  <div class="econ-sec">
+    <div class="sec-lbl">Règle fondamentale</div>
+    <div style="background:rgba(201,149,42,.05);border:1px solid rgba(201,149,42,.13);border-radius:11px;padding:12px">
+      <div style="font-size:11px;color:var(--gray);line-height:1.65">Les pièces ne s'accumulent <strong style="color:var(--wht)">qu'en présence physique</strong> dans un parc. Les rondins passifs continuent même absent.</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /screens -->
+<div id="bnav">
+  <button class="nb active" onclick="goScreen('map',this)"><div class="nb-i">🗺️</div><div class="nb-l">Carte</div></button>
+  <button class="nb" onclick="goScreen('trees',this)"><div class="nb-i">🌳</div><div class="nb-l">Arbres</div></button>
+  <button class="nb" onclick="goScreen('mis',this)"><div class="nb-i">⚔️</div><div class="nb-l">Missions</div></button>
+  <button class="nb" onclick="goScreen('rank',this)"><div class="nb-i">🏆</div><div class="nb-l">Classmt</div></button>
+  <button class="nb" onclick="goScreen('clans',this)"><div class="nb-i">🌿</div><div class="nb-l">Clan</div></button>
+  <button class="nb" onclick="goScreen('ech',this)"><div class="nb-i">🔀</div><div class="nb-l">Échanges</div></button>
+  <button class="nb" onclick="goScreen('profil',this)"><div class="nb-i">👤</div><div class="nb-l">Profil</div></button>
+</div>
+<div id="moverlay" onclick="if(event.target===this)closeModal()">
+  <div id="msheet"><div class="mhandle"></div><div id="mcontent"></div></div>
+</div>
+<div id="toast"></div>
+</div>
+<script>
+// ════════ DATA ════════
+const PARKS=[
+  {id:0,name:"Parc Central",emoji:"🏙️",trees:[0,1,2,3,4,5]},
+  {id:1,name:"Forêt du Nord",emoji:"🌲",trees:[6,7,8,9,10,11]},
+  {id:2,name:"Jardin Botanique",emoji:"🌺",trees:[12,13,14,15]},
+  {id:3,name:"Bois du Sud",emoji:"🍂",trees:[16,17,18,19]},
+];
+const TD=[
+  {id:0,x:75,y:60,name:"Le Vieux Monarque",species:"Chêne pédonculé",age:312,rondins:147,tier:"⚔",tierN:"ARBRE ANCIEN",co2:"2.8t/an",co2s:"Champion de séquestration",ombre:"22m",ombs:"Zone fraîche de 22m de rayon",temp:"−4°C",temps:"Réduit la température de 4°C",sante:"Remarquable",passif:8},
+  {id:1,x:52,y:108,name:"Le Patriarche",species:"Chêne rouvre",age:185,rondins:92,tier:"🌟",tierN:"ARBRE NOTABLE",co2:"1.4t/an",co2s:"1 400 kg/an",ombre:"18m",ombs:"Canopée dense",temp:"−3°C",temps:"−3°C localement",sante:"Excellent",passif:5},
+  {id:2,x:138,y:50,name:"Hêtre des Brumes",species:"Hêtre commun",age:110,rondins:58,tier:"🌳",tierN:"GRAND ARBRE",co2:"0.9t/an",co2s:"900 kg/an",ombre:"14m",ombs:"Ombre douce",temp:"−2°C",temps:"−2°C",sante:"Bon",passif:4},
+  {id:3,x:228,y:70,name:"Pin d'Auvergne",species:"Pin sylvestre",age:130,rondins:63,tier:"🌳",tierN:"GRAND ARBRE",co2:"1.1t/an",co2s:"1 100 kg/an",ombre:"12m",ombs:"Cône ombragé",temp:"−2°C",temps:"Régulation modérée",sante:"Bon",passif:4},
+  {id:4,x:295,y:50,name:"Le Solitaire",species:"Chêne pubescent",age:160,rondins:78,tier:"🌳",tierN:"GRAND ARBRE",co2:"1.2t/an",co2s:"1 200 kg/an",ombre:"16m",ombs:"Canopée de 16m",temp:"−3°C",temps:"−3°C autour",sante:"Excellent",passif:5},
+  {id:5,x:320,y:100,name:"Érable Doré",species:"Érable sycomore",age:75,rondins:37,tier:"🌿",tierN:"ARBRE ADULTE",co2:"0.5t/an",co2s:"500 kg/an",ombre:"11m",ombs:"Ombre légère",temp:"−1°C",temps:"Légère fraîcheur",sante:"Bon",passif:2},
+  {id:6,x:80,y:65,name:"Grand Cèdre",species:"Cèdre du Liban",age:280,rondins:132,tier:"⚔",tierN:"ARBRE ANCIEN",co2:"3.1t/an",co2s:"Champion conifère",ombre:"25m",ombs:"Canopée royale 25m",temp:"−5°C",temps:"Îlot de fraîcheur intense",sante:"Exceptionnel",passif:9},
+  {id:7,x:200,y:55,name:"Sapin Géant",species:"Sapin pectiné",age:190,rondins:95,tier:"🌟",tierN:"ARBRE NOTABLE",co2:"1.8t/an",co2s:"Conifère séquestreur",ombre:"17m",ombs:"Ombre persistante",temp:"−3°C",temps:"−3°C toute l'année",sante:"Excellent",passif:6},
+  {id:8,x:310,y:70,name:"Épicéa Vénérable",species:"Épicéa commun",age:145,rondins:72,tier:"🌳",tierN:"GRAND ARBRE",co2:"1.3t/an",co2s:"1 300 kg/an",ombre:"14m",ombs:"Ombre dense",temp:"−2°C",temps:"Régulateur",sante:"Bon",passif:4},
+  {id:9,x:55,y:175,name:"Hêtre Pourpre",species:"Hêtre pourpre",age:95,rondins:48,tier:"🌿",tierN:"ARBRE ADULTE",co2:"0.8t/an",co2s:"800 kg/an",ombre:"12m",ombs:"Ombre violacée",temp:"−2°C",temps:"Fraîcheur douce",sante:"Bon",passif:3},
+  {id:10,x:165,y:175,name:"Pin Laricio",species:"Pin laricio",age:70,rondins:35,tier:"🌿",tierN:"ARBRE ADULTE",co2:"0.6t/an",co2s:"600 kg/an",ombre:"10m",ombs:"Ombre conique",temp:"−1°C",temps:"Impact modéré",sante:"Bon",passif:2},
+  {id:11,x:280,y:180,name:"Mélèze Doré",species:"Mélèze d'Europe",age:110,rondins:55,tier:"🌳",tierN:"GRAND ARBRE",co2:"0.9t/an",co2s:"900 kg/an",ombre:"13m",ombs:"Ombre filtrée",temp:"−2°C",temps:"Confort thermique",sante:"Excellent",passif:3},
+  {id:12,x:90,y:80,name:"Ginkgo Millénaire",species:"Ginkgo biloba",age:200,rondins:110,tier:"🌟",tierN:"ARBRE NOTABLE",co2:"1.6t/an",co2s:"Fossile vivant",ombre:"16m",ombs:"Canopée en éventail",temp:"−3°C",temps:"Fraîcheur urbaine",sante:"Exceptionnel",passif:7},
+  {id:13,x:250,y:90,name:"Tulipier Royal",species:"Tulipier de Virginie",age:85,rondins:53,tier:"🌿",tierN:"ARBRE ADULTE",co2:"0.7t/an",co2s:"700 kg/an",ombre:"12m",ombs:"Ombre large",temp:"−2°C",temps:"Fraîcheur modérée",sante:"Excellent",passif:3},
+  {id:14,x:165,y:165,name:"Magnolia Géant",species:"Magnolia grandiflora",age:60,rondins:30,tier:"🌿",tierN:"ARBRE ADULTE",co2:"0.4t/an",co2s:"Persistant tropical",ombre:"9m",ombs:"Ombre dense",temp:"−1°C",temps:"Impact mineur",sante:"Bon",passif:2},
+  {id:15,x:75,y:185,name:"Séquoia Junior",species:"Séquoia géant",age:40,rondins:20,tier:"🌱",tierN:"JEUNE ARBRE",co2:"0.3t/an",co2s:"Prometteur",ombre:"7m",ombs:"En croissance",temp:"0°C",temps:"Impact futur",sante:"Bon",passif:1},
+  {id:16,x:85,y:75,name:"Chêne Légendaire",species:"Chêne sessile",age:350,rondins:168,tier:"⚔",tierN:"ARBRE ANCESTRAL",co2:"3.5t/an",co2s:"Plus grand séquestreur",ombre:"28m",ombs:"Canopée royale 28m",temp:"−5°C",temps:"Oasis thermique",sante:"Légendaire",passif:10},
+  {id:17,x:240,y:65,name:"Orme Vénérable",species:"Orme champêtre",age:220,rondins:108,tier:"🌟",tierN:"ARBRE NOTABLE",co2:"2.1t/an",co2s:"Résistant graphiose",ombre:"20m",ombs:"Grande canopée",temp:"−4°C",temps:"Refroidissement notable",sante:"Excellent",passif:6},
+  {id:18,x:145,y:170,name:"Frêne des Druides",species:"Frêne commun",age:140,rondins:68,tier:"🌳",tierN:"GRAND ARBRE",co2:"1.1t/an",co2s:"1 100 kg/an",ombre:"15m",ombs:"Ombre ramifiée",temp:"−2°C",temps:"Fraîcheur équilibrée",sante:"Bon",passif:4},
+  {id:19,x:290,y:175,name:"Platane du Midi",species:"Platane hybride",age:90,rondins:45,tier:"🌿",tierN:"ARBRE ADULTE",co2:"0.8t/an",co2s:"Urban champion",ombre:"13m",ombs:"Ombre urbaine dense",temp:"−2°C",temps:"Régulateur urbain",sante:"Excellent",passif:3},
+];
+const RANKS=[{min:0,l:"🌱 GRAINE"},{min:50,l:"🌿 POUSSE"},{min:150,l:"🌳 ARBORICULTEUR"},{min:400,l:"⚔ GARDIEN"},{min:800,l:"🏔 SEIGNEUR"},{min:1500,l:"👑 MAÎTRE"}];
+const MPOOL=[
+  {type:"daily",css:"bd",n:"Première collecte",desc:"Gagnez des pièces dans un parc",goal:1,key:"earn",rew:25},
+  {type:"daily",css:"bd",n:"Gardien actif",desc:"Défendez 2 de vos arbres",goal:2,key:"def",rew:30},
+  {type:"daily",css:"bd",n:"Collecteur assidu",desc:"Collectez des pièces 3 fois",goal:3,key:"earn",rew:40},
+  {type:"daily",css:"bd",n:"Premier assaut",desc:"Lancez une attaque",goal:1,key:"atk",rew:20},
+  {type:"daily",css:"bd",n:"Propriétaire",desc:"Possédez 1 arbre",goal:1,key:"own",rew:50},
+  {type:"daily",css:"bd",n:"Photo de terrain",desc:"Prenez une photo d'arbre",goal:1,key:"photo",rew:80},
+  {type:"weekly",css:"bw",n:"Explorateur",desc:"Visitez 3 parcs différents",goal:3,key:"parks",rew:80},
+  {type:"weekly",css:"bw",n:"Baron forestier",desc:"Possédez 3 arbres simultanément",goal:3,key:"own3",rew:100},
+  {type:"weekly",css:"bw",n:"Conquistador",desc:"Conquérez 2 arbres rivaux",goal:2,key:"conq",rew:120},
+  {type:"weekly",css:"bw",n:"Grand défenseur",desc:"Défendez 5 fois",goal:5,key:"def",rew:90},
+  {type:"terri",css:"bt",n:"25% du parc",desc:"Contrôlez 3 arbres dans un parc",goal:3,key:"ctrl",rew:100},
+  {type:"terri",css:"bt",n:"Domination",desc:"Possédez le plus grand arbre du parc",goal:1,key:"biggest",rew:150},
+  {type:"ia",css:"bi",n:"IA — Purge nocturne",desc:"Défendez 3× entre 20h et 8h",goal:3,key:"night",rew:75},
+  {type:"ia",css:"bi",n:"IA — Tous les parcs",desc:"Visitez les 4 parcs disponibles",goal:4,key:"parks",rew:160},
+  {type:"ia",css:"bi",n:"IA — Photographe",desc:"Prenez 3 photos d'arbres",goal:3,key:"photo",rew:120},
+];
+const RIVALS=[
+  {name:"MarcelVert_63",rnd:1847,trees:12,clan:"La Guilde Sombre",ava:"💀",rank:"👑"},
+  {name:"SylvanKing42",rnd:612,trees:4,clan:"Les Verts du Plateau",ava:"🌲",rank:"⭐"},
+  {name:"UrbanWild22",rnd:645,trees:4,clan:"Écologistes Urbains",ava:"🌍",rank:"⭐"},
+  {name:"PinRoyal",rnd:580,trees:2,clan:"Compagnie des Pins",ava:"🌲",rank:"🌿"},
+  {name:"DarkWood",rnd:1240,trees:9,clan:"La Guilde Sombre",ava:"🐺",rank:"⭐"},
+  {name:"ForêtFée",rnd:580,trees:3,clan:"Les Verts du Plateau",ava:"🧚",rank:"⭐"},
+  {name:"ShadowElm",rnd:998,trees:7,clan:"La Guilde Sombre",ava:"👤",rank:"🌿"},
+  {name:"GreenArch",rnd:720,trees:5,clan:"Écologistes Urbains",ava:"🏹",rank:"⭐"},
+  {name:"CrimsonOak",rnd:876,trees:6,clan:"La Guilde Sombre",ava:"🔴",rank:"🌿"},
+  {name:"CityTree",rnd:580,trees:3,clan:"Écologistes Urbains",ava:"🌿",rank:"🌿"},
+  {name:"PinVert_63",rnd:445,trees:2,clan:"Les Verts du Plateau",ava:"🌱",rank:"🌿"},
+  {name:"SapinGeant",rnd:430,trees:2,clan:"Compagnie des Pins",ava:"🌲",rank:"🌿"},
+  {name:"MelèzeOr",rnd:290,trees:1,clan:"Compagnie des Pins",ava:"🍂",rank:"🌱"},
+  {name:"WildSapin",rnd:245,trees:1,clan:"Arboriculteurs Libres",ava:"🏕️",rank:"🌱"},
+  {name:"MetroForest",rnd:420,trees:2,clan:"Écologistes Urbains",ava:"🏙️",rank:"🌿"},
+  {name:"FreeOak",rnd:320,trees:2,clan:"Arboriculteurs Libres",ava:"🌳",rank:"🌿"},
+  {name:"Végétal_K",rnd:380,trees:2,clan:"Arboriculteurs Libres",ava:"🌿",rank:"🌿"},
+  {name:"NatureHunt",rnd:510,trees:3,clan:"Écologistes Urbains",ava:"🦅",rank:"⭐"},
+  {name:"CèdreFou",rnd:385,trees:2,clan:"Compagnie des Pins",ava:"🌲",rank:"🌿"},
+  {name:"OakMaster",rnd:760,trees:5,clan:"La Guilde Sombre",ava:"🗡️",rank:"⭐"},
+];
+const CLANS=[
+  {id:0,n:"La Guilde Sombre",badge:"💀",bg:"rgba(139,26,40,.2)",bc:"rgba(199,48,69,.3)",trophy:12650,mbr:30,max:30,st:"closed",desc:"Conquérants impitoyables",top:[{r:"👑",n:"MarcelVert_63",rnd:1847},{r:"⭐",n:"DarkWood",rnd:1240},{r:"⭐",n:"OakMaster",rnd:760},{r:"🌿",n:"CrimsonOak",rnd:876}]},
+  {id:1,n:"Écologistes Urbains",badge:"🌍",bg:"rgba(26,58,92,.2)",bc:"rgba(74,158,212,.28)",trophy:7890,mbr:22,max:30,st:"invite",desc:"Pour la biodiversité urbaine",top:[{r:"👑",n:"GreenArch",rnd:720},{r:"⭐",n:"UrbanWild22",rnd:645},{r:"⭐",n:"NatureHunt",rnd:510},{r:"🌿",n:"CityTree",rnd:580}]},
+  {id:2,n:"Compagnie des Pins",badge:"🌲",bg:"rgba(62,50,14,.28)",bc:"rgba(180,130,40,.28)",trophy:5340,mbr:15,max:25,st:"open",desc:"Spécialistes des conifères",top:[{r:"👑",n:"PinRoyal",rnd:580},{r:"⭐",n:"SapinGeant",rnd:430},{r:"🌿",n:"CèdreFou",rnd:385},{r:"🌿",n:"MelèzeOr",rnd:290}]},
+  {id:3,n:"Arboriculteurs Libres",badge:"🏕️",bg:"rgba(28,28,28,.3)",bc:"rgba(100,100,100,.22)",trophy:3210,mbr:8,max:30,st:"open",desc:"Indépendants sans contrainte",top:[{r:"👑",n:"FreeOak",rnd:320},{r:"⭐",n:"Végétal_K",rnd:380},{r:"🌿",n:"WildSapin",rnd:245},{r:"🌱",n:"LibreHêtre",rnd:150}]},
+];
+const EXCHANGES=[
+  {type:"vente",treeName:"Hêtre des Brumes",treeSpec:"Hêtre commun · 110 ans",price:95,rnd:58,passif:4,seller:"UrbanWild22",desc:"Arbre en parfait état, défense déjà à 40%. Vente car migration vers Bois du Sud."},
+  {type:"achat",treeName:"Chêne pédonculé",treeSpec:"n'importe lequel · 100+ ans",price:120,rnd:0,passif:0,seller:"DarkWood",desc:"Recherche chêne pédonculé ancien, offre 120💰. Négo possible."},
+  {type:"swap",treeName:"Pin d'Auvergne",treeSpec:"Pin sylvestre · 130 ans",price:0,rnd:63,passif:4,seller:"SylvanKing42",desc:"Échange contre arbre de même valeur dans Jardin Botanique ou Bois du Sud."},
+  {type:"vente",treeName:"Érable Doré",treeSpec:"Érable sycomore · 75 ans",price:55,rnd:37,passif:2,seller:"CityTree",desc:"Vente rapide — besoin de pièces pour attaquer. Prix négociable."},
+  {type:"vente",treeName:"Pin Laricio",treeSpec:"Pin laricio · 70 ans",price:48,rnd:35,passif:2,seller:"MelèzeOr",desc:"Arbre solide dans Forêt du Nord. Inclut mise de défense de 15💰."},
+  {type:"achat",treeName:"Ginkgo ou similaire",treeSpec:"200+ ans, Jardin Botanique",price:180,rnd:0,passif:0,seller:"OakMaster",desc:"Offre premium pour arbre ancien du Jardin Botanique. Contact en chat."},
+  {type:"swap",treeName:"Mélèze Doré",treeSpec:"Mélèze d'Europe · 110 ans",price:0,rnd:55,passif:3,seller:"PinVert_63",desc:"Échange Forêt du Nord contre Parc Central, même valeur."},
+];
+
+// ════ STATE ════
+let G={
+  coins:200,rndFx:0,rndPs:0,
+  victories:0,cMissions:0,
+  inPark:false,curPark:0,
+  earnCD:0,photoCd:0,eventCd:0,
+  visitedParks:new Set(),
+  trees:TD.map(t=>({...t,owner:null,defStake:0})),
+  missions:[],regenTimer:0,
+  echTab:'all',lbTabV:'players',
+};
+function freshMissions(){
+  const s=[...MPOOL].sort(()=>Math.random()-.5);
+  G.missions=s.slice(0,7).map((m,i)=>({...m,id:i,prog:0,claimed:false}));
+}
+freshMissions();
+// Give rivals some trees
+[[4,'rival',30],[3,'rival',25],[16,'rival',40],[6,'rival',50],[17,'rival',35],[7,'rival',0]].forEach(([id,o,sk])=>{
+  G.trees[id].owner=o;G.trees[id].defStake=sk;
+});
+
+// ════ UTILS ════
+const totalRnd=()=>G.rndFx+Math.floor(G.rndPs);
+const passRate=()=>G.trees.filter(t=>t.owner==='you').reduce((s,t)=>s+t.passif,0);
+const ownCount=()=>G.trees.filter(t=>t.owner==='you').length;
+const getRank=r=>{let x=RANKS[0];for(const k of RANKS)if(r>=k.min)x=k;return x.l};
+const pkTrees=p=>PARKS[p].trees.map(id=>G.trees[id]);
+const tEmo=t=>{const s=t.species;if(s.includes('Pin')||s.includes('Sapin')||s.includes('Épicéa')||s.includes('Mélèze')||s.includes('Séquoia')||s.includes('Cèdre'))return'🌲';if(s.includes('Bouleau'))return'🍃';if(s.includes('Ginkgo'))return'🍂';if(s.includes('Magnolia')||s.includes('Tulipier'))return'🌸';return'🌳'};
+const atkCost=t=>t.rondins+t.defStake; // règle exacte
+function toast(msg){const e=document.getElementById('toast');e.textContent=msg;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),2800)}
+function mProg(key,v=1){G.missions.forEach(m=>{if(!m.claimed&&m.key===key)m.prog=Math.min(m.goal,m.prog+v)});if(key==='earn'||key==='def'||key==='atk'||key==='photo'){G.missions.forEach(m=>{if(!m.claimed&&m.key==='own')m.prog=Math.min(m.goal,ownCount());if(!m.claimed&&m.key==='own3')m.prog=Math.min(m.goal,ownCount());if(!m.claimed&&m.key==='ctrl')m.prog=Math.min(m.goal,pkTrees(G.curPark).filter(t=>t.owner==='you').length)});}if(document.getElementById('screen-mis').classList.contains('active'))renderMissions()}
+function checkRegen(){const allDone=G.missions.every(m=>m.claimed);if(allDone&&G.regenTimer===0){G.regenTimer=8;toast('⏳ Nouvelles missions dans 8s…')}}
+
+// ════ NAVIGATION ════
+function goScreen(n,btn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+n).classList.add('active');
+  if(btn)btn.classList.add('active');
+  renderAll();
+}
+
+// ════ PARK ════
+function renderParkSel(){
+  document.getElementById('park-sel').innerHTML=PARKS.map((p,i)=>`<div class="pk ${i===G.curPark?'active':''}" onclick="switchPark(${i})">${p.emoji} ${p.name}</div>`).join('');
+}
+function switchPark(i){
+  G.curPark=i;G.inPark=false;updateGPS();renderParkSel();renderMap();
+  document.getElementById('park-name-t').textContent=PARKS[i].name;
+  toast(`📍 ${PARKS[i].name} sélectionné`);
+}
+function togglePark(){
+  G.inPark=!G.inPark;
+  if(G.inPark){G.visitedParks.add(G.curPark);mProg('parks',G.visitedParks.size);G.missions.forEach(m=>{if(!m.claimed&&m.key==='parks')m.prog=Math.min(m.goal,G.visitedParks.size)});}
+  updateGPS();
+}
+function updateGPS(){
+  const inP=G.inPark;
+  const b=document.getElementById('gpsbanner');
+  b.className=inP?'in':'';b.id='gpsbanner';
+  document.getElementById('gd').style.background=inP?'var(--g4)':'var(--red)';
+  document.getElementById('gps-t').textContent=inP?`Dans ${PARKS[G.curPark].name} 📍`:'Hors du parc';
+  document.getElementById('gps-s').textContent=inP?'GPS actif — activités disponibles':'Appuyez pour simuler l\'entrée GPS';
+  document.getElementById('gbtn').textContent=inP?'SORTIR':'ENTRER';
+  // park activities
+  const pa=document.getElementById('pa-event');
+  const pp=document.getElementById('pa-photo');
+  if(inP){pa.classList.remove('disabled');pp.classList.remove('disabled');document.getElementById('event-cd').textContent='Disponible';document.getElementById('photo-cd').textContent='Disponible';}
+  else{pa.classList.add('disabled');pp.classList.add('disabled');document.getElementById('event-cd').textContent='Entrer d\'abord';document.getElementById('photo-cd').textContent='Entrer d\'abord';}
+  if(inP)toast(`📍 Entrée dans ${PARKS[G.curPark].name} — activités débloquées !`);
+  else toast('Vous quittez le parc');
+}
+
+// ════ ACTIVITIES ════
+function earnCoins(){
+  if(G.earnCD>0){toast(`⏱ Encore ${G.earnCD}s`);return;}
+  if(!G.inPark){toast('📍 Entrez dans le parc d\'abord');return;}
+  G.coins+=15;G.earnCD=20;mProg('earn');
+  toast('+15 💰 collectés !');renderAll();
+}
+function doActivity(type){
+  if(!G.inPark){toast('📍 Entrez dans le parc d\'abord');return;}
+  if(type==='bench'){
+    if(G.eventCd>0){toast(`⏱ Encore ${G.eventCd}s`);return;}
+    G.coins+=50;G.eventCd=45;mProg('earn');
+    toast('🪑 Banc du parc — +50 💰 !');renderAll();
+  } else if(type==='kiosk'){
+    G.coins+=30;toast('🏛 Kiosque — +30 💰 + info sur vos arbres');renderAll();
+  } else if(type==='event'){
+    if(G.eventCd>0){toast(`⏱ Événement dans ${G.eventCd}s`);return;}
+    G.coins+=50;G.eventCd=60;toast('🎯 Événement du parc — +50 💰 !');renderAll();
+  }
+}
+function doPhoto(){
+  if(!G.inPark){toast('📍 Entrez dans le parc');return;}
+  if(G.photoCd>0){toast(`⏱ Encore ${G.photoCd}s`);return;}
+  G.coins+=80;G.photoCd=60;mProg('photo');
+  toast('📸 Photo analysée — +80 💰 ! L\'IA met à jour les stats.');renderAll();
+}
+
+// ════ MAP RENDER ════
+function renderMap(){
+  renderParkSel();
+  const layer=document.getElementById('mtlayer');
+  const pts=pkTrees(G.curPark);
+  layer.innerHTML=pts.map(t=>{
+    const r=t.rondins>=120?17:t.rondins>=60?14:11;
+    const owned=t.owner==='you',rival=t.owner==='rival';
+    const rc=owned?`rgba(92,184,50,.25)`:rival?`rgba(199,48,69,.2)`:`rgba(60,50,30,.18)`;
+    const rs=owned?'#5CB832':rival?'#C73045':'#4A4438';
+    const em=tEmo(t);
+    return `<g class="map-tree" onclick="openTree(${t.id})" style="cursor:pointer">
+      <circle cx="${t.x}" cy="${t.y}" r="${r+5}" fill="${rc}" stroke="${rs}" stroke-width="${t.owner?'2':'1.2'}"/>
+      <text x="${t.x}" y="${t.y+1}" text-anchor="middle" dominant-baseline="middle" style="font-size:${r*.9}px;pointer-events:none">${em}</text>
+      ${owned?`<circle cx="${t.x+r}" cy="${t.y-r}" r="5" fill="#5CB832" stroke="rgba(0,0,0,.4)" stroke-width="1"/>`:``}
+      ${rival?`<circle cx="${t.x+r}" cy="${t.y-r}" r="5" fill="#C73045" stroke="rgba(0,0,0,.4)" stroke-width="1"/>`:``}
+    </g>`;
+  }).join('');
+}
+
+// ════ TREES ════
+function renderTrees(){
+  const el=document.getElementById('tgrid');
+  const pts=pkTrees(G.curPark).sort((a,b)=>{const o={you:0,rival:1,null:2};return o[a.owner]-o[b.owner]||b.rondins-a.rondins});
+  el.innerHTML=pts.map(t=>{
+    const owned=t.owner==='you',rival=t.owner==='rival';
+    const ac=atkCost(t);
+    return `<div class="tc ${owned?'owned':rival?'rival':''}" onclick="openTree(${t.id})">
+      <div class="tc-top">
+        <div class="tc-emo">${tEmo(t)}</div>
+        <div class="tc-meta">
+          <div class="tc-tier">${t.tier} ${t.tierN}</div>
+          <div class="tc-name">${t.name}</div>
+          <div class="tc-spe">${t.species} · ${t.age} ans${owned?` · <span style="color:var(--grn);font-size:8.5px">+${t.passif}/h 🪵</span>`:''}</div>
+        </div>
+        <div class="tc-rnd">
+          <div class="tc-rnum">${t.rondins}<small> 🪵</small></div>
+          <div class="tc-status" style="color:${owned?'var(--grn)':rival?'var(--redl)':'var(--gray)'}">${owned?'POSSÉDÉ':rival?'RIVAL':'libre'}</div>
+        </div>
+      </div>
+      <div class="tc-bio">
+        <div class="bs co2"><span class="bs-icon">🌫️</span><span class="bs-val">${t.co2}</span><span class="bs-lbl">CO₂/an</span></div>
+        <div class="bs temp"><span class="bs-icon">🌡️</span><span class="bs-val">${t.temp}</span><span class="bs-lbl">Temp.</span></div>
+        <div class="bs ombre"><span class="bs-icon">☂️</span><span class="bs-val">${t.ombre}</span><span class="bs-lbl">Ombre</span></div>
+        <div class="bs age"><span class="bs-icon">🌱</span><span class="bs-val">${t.age}<span style="font-size:8px">a</span></span><span class="bs-lbl">Âge</span></div>
+      </div>
+      ${t.owner&&t.defStake>0?`<div class="tc-stake">🛡 Mise de défense : <span>${t.defStake} 💰</span> en jeu${owned?' (vous récupérez si perdu)':` · Attaquer = ${ac} 💰`}</div>`:''}
+      <div class="tc-act">
+        ${!t.owner?`<button class="ab ab-cl" onclick="event.stopPropagation();openTree(${t.id})">🏴 RÉCLAMER — ${t.rondins}💰</button>`:''}
+        ${owned?`<button class="ab ab-df" onclick="event.stopPropagation();openTree(${t.id})">🛡 DÉFENDRE</button><button class="ab" style="background:rgba(201,149,42,.1);color:var(--gold);border:1px solid rgba(201,149,42,.2);font-family:'Bebas Neue';font-size:12px;letter-spacing:1.5px" onclick="event.stopPropagation();proposeEch(${t.id})">🔀 VENDRE</button>`:''}
+        ${rival?`<button class="ab ab-at" onclick="event.stopPropagation();openTree(${t.id})">⚔️ ATTAQUER — ${ac}💰</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('rnd-big').textContent=totalRnd()+' 🪵';
+  document.getElementById('rank-lbl').textContent=getRank(totalRnd());
+}
+
+// ════ MISSIONS ════
+function renderMissions(){
+  const el=document.getElementById('mlist');
+  if(G.regenTimer>0){
+    el.innerHTML=`<div class="mis-regen">🔄 Nouvelles missions dans ${G.regenTimer}s…</div>`;
+    return;
+  }
+  el.innerHTML=G.missions.map(m=>{
+    const pct=Math.min(100,m.prog/m.goal*100);
+    const done=m.prog>=m.goal;
+    const type=m.type==='daily'?'JOUR':m.type==='weekly'?'SEMAINE':m.type==='terri'?'TERRITOIRE':'IA';
+    return `<div class="mi ${done&&m.claimed?'done':''}">
+      <div class="mi-top">
+        <div class="mi-badge ${m.css}">${type}</div>
+        <div class="mi-body"><div class="mi-name">${m.n}</div><div class="mi-desc">${m.desc}</div></div>
+        <div class="mi-rew">+${m.rew}💰</div>
+      </div>
+      <div class="pbar"><div class="pbar-f" style="width:${pct}%;background:${done?'#5CB832':'#C9952A'}"></div></div>
+      <div class="mi-pl"><span>${m.prog}/${m.goal}</span><span>${done?'✅ Terminée':'En cours…'}</span></div>
+      ${done&&!m.claimed?`<button class="mi-btn" onclick="claimMis(${m.id})">COLLECTER +${m.rew} 💰</button>`:''}
+      ${done&&m.claimed?`<div class="mi-done">✅ Collectée</div>`:''}
+    </div>`;
+  }).join('');
+}
+function claimMis(id){
+  const m=G.missions[id];if(!m||m.claimed||m.prog<m.goal)return;
+  G.coins+=m.rew;m.claimed=true;G.cMissions++;
+  toast(`🎉 +${m.rew} 💰 collectés !`);
+  renderMissions();renderProfile();
+  checkRegen();
+}
+
+// ════ LEADERBOARD ════
+let lbTab='players';
+function setLbTab(t,btn){
+  lbTab=t;document.querySelectorAll('#screen-rank .ct').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');
+  document.getElementById('lb-players').style.display=t==='players'?'block':'none';
+  document.getElementById('lb-parks').style.display=t==='parks'?'block':'none';
+  renderLeaderboard();
+}
+function renderLeaderboard(){
+  const me={name:"Ranger_Noir",rnd:totalRnd(),trees:ownCount(),clan:"Les Verts du Plateau",ava:"🐺",you:true};
+  const all=[me,...RIVALS].sort((a,b)=>b.rnd-a.rnd);
+  const medals=['🥇','🥈','🥉'];
+  document.getElementById('lb-list').innerHTML=all.map((p,i)=>`
+    <div class="lbr ${p.you?'you':''}" onclick="${p.you?'':('openPlayer('+JSON.stringify(p)+')')}">
+      <div class="lbn ${i===0?'g1':i===1?'g2':i===2?'g3':''}">${medals[i]||i+1}</div>
+      <div><div class="lbpn">${p.ava||'🌳'} ${p.name}${p.you?'<span class="you-tag">VOUS</span>':''}</div><div class="lbpm">${p.clan||''}</div></div>
+      <div class="lbv">${p.rnd} 🪵</div>
+      <div class="lbt">${p.trees||0} 🌳</div>
+    </div>`).join('');
+  // Parks
+  const pd=PARKS.map(p=>{const ow=p.trees.filter(id=>G.trees[id].owner==='you').length;return{name:p.emoji+' '+p.name,ow,total:p.trees.length}}).sort((a,b)=>b.ow-a.ow);
+  document.getElementById('lb-parks-list').innerHTML=pd.map((p,i)=>`
+    <div class="lbr" style="grid-template-columns:28px 1fr 54px">
+      <div class="lbn ${i===0?'g1':i===1?'g2':i===2?'g3':''}">${medals[i]||i+1}</div>
+      <div><div class="lbpn">${p.name}</div><div class="lbpm">${p.total} arbres total</div></div>
+      <div class="lbv">${p.ow} 🌳</div>
+    </div>`).join('');
+}
+
+// ════ PLAYER PROFILE MODAL ════
+function openPlayer(p){
+  // Generate plausible tree list for rival
+  const treeList=TD.filter(t=>G.trees[t.id].owner!=='you'&&Math.random()>.5).slice(0,3);
+  document.getElementById('mcontent').innerHTML=`
+    <div class="pp-head">
+      <div class="pp-ava">${p.ava||'🌳'}</div>
+      <div class="pp-name">${p.name}</div>
+      <div class="pp-rank">${getRank(p.rnd)}</div>
+      <div class="pp-clan">🌿 ${p.clan}</div>
+    </div>
+    <div class="pp-stats">
+      <div class="pp-stat"><div class="pp-stat-v">${p.rnd}</div><div class="pp-stat-l">🪵 Rondins</div></div>
+      <div class="pp-stat"><div class="pp-stat-v">${p.trees}</div><div class="pp-stat-l">🌳 Arbres</div></div>
+      <div class="pp-stat"><div class="pp-stat-v">${Math.floor(p.rnd/30)}</div><div class="pp-stat-l">⚔ Victoires</div></div>
+    </div>
+    <div class="sec-lbl" style="padding:0 2px;margin-bottom:8px">Arbres possédés</div>
+    <div class="pp-trees">
+      ${TD.slice(0,p.trees).map(t=>`<div class="ppt"><div class="ppt-emo">${tEmo(t)}</div><div class="ppt-info"><div class="ppt-name">${t.name}</div><div class="ppt-spe">${t.species} · ${t.age} ans</div></div><div class="ppt-rnd">${t.rondins} 🪵</div></div>`).join('')}
+    </div>
+    <div style="margin-top:12px;display:flex;gap:7px">
+      <button class="btn-f btn-fd" onclick="toast('Message envoyé à ${p.name} !');closeModal()" style="font-size:13px"><span>💬 MESSAGE</span></button>
+      <button class="btn-f btn-fa" onclick="toast('Défi lancé à ${p.name} !');closeModal()" style="font-size:13px"><span>⚔️ DÉFIER</span></button>
+    </div>`;
+  document.getElementById('moverlay').classList.add('open');
+}
+
+// ════ CLANS ════
+function renderClans(){
+  document.getElementById('cm-myrnd').textContent=totalRnd()+' 🪵';
+  document.getElementById('cm-mytrees').textContent=ownCount()+' arbres';
+  document.getElementById('clan-list-other').innerHTML=CLANS.map(c=>{
+    const stCls=c.st==='open'?'os-open':c.st==='invite'?'os-invite':'os-closed';
+    const stTxt=c.st==='open'?'🔓 OUVERT':c.st==='invite'?'✉️ SUR INVITE':'🔒 FERMÉ';
+    return `<div class="oc">
+      <div class="oc-head">
+        <div class="oc-badge" style="background:${c.bg};border:1px solid ${c.bc}">${c.badge}</div>
+        <div class="oc-info">
+          <div class="oc-name">${c.n}</div>
+          <div class="oc-desc">${c.desc}</div>
+          <div class="oc-stats"><div class="oc-st"><b>${c.mbr}</b>/${c.max}</div><div class="os-badge ${stCls}">${stTxt}</div></div>
+        </div>
+        <div class="oc-trophy">${c.trophy.toLocaleString('fr')}<small>🏆</small></div>
+      </div>
+      <div style="height:1px;background:rgba(255,255,255,.04);margin:0 13px"></div>
+      <div class="oc-members">${c.top.map(m=>`<div class="ocm"><span class="ocm-rank">${m.r}</span><span class="ocm-name">${m.n}</span></div>`).join('')}</div>
+      <div class="oc-join">
+        ${c.st==='closed'?`<button class="btn-join" style="background:rgba(255,255,255,.05);color:var(--gray);cursor:not-allowed" disabled>🔒 FERMÉ</button>`:
+          `<button class="btn-join btn-join-g" onclick="toast('Demande envoyée à ${c.n} !')">⚔ REJOINDRE</button>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+function sendMsg(){
+  const inp=document.getElementById('chat-in');
+  const txt=inp.value.trim();if(!txt)return;
+  const msgs=document.getElementById('chat-msgs');
+  const now=new Date();
+  const time=now.toLocaleTimeString('fr',{hour:'2-digit',minute:'2-digit'});
+  const el=document.createElement('div');
+  el.className='cmsg mine';
+  el.innerHTML=`<div class="cmsg-author">Moi</div><div class="cmsg-bubble">${txt}</div><div class="cmsg-time">${time}</div>`;
+  msgs.appendChild(el);msgs.scrollTop=msgs.scrollHeight;inp.value='';
+  // Auto-reply after 2s
+  setTimeout(()=>{
+    const replies=["💪 On est avec toi !","Bien joué 🌿","Attention MarcelVert rode encore","Quelqu'un au Bois du Sud ce soir ?","Alliance en guerre — tout le monde en alerte ⚔️"];
+    const names=["SylvanKing42","ForêtFée","PinVert_63","Verdure_77"];
+    const re=document.createElement('div');
+    re.className='cmsg them';
+    re.innerHTML=`<div class="cmsg-author">${names[Math.floor(Math.random()*names.length)]}</div><div class="cmsg-bubble">${replies[Math.floor(Math.random()*replies.length)]}</div><div class="cmsg-time">${time}</div>`;
+    msgs.appendChild(re);msgs.scrollTop=msgs.scrollHeight;
+  },1800+Math.random()*1200);
+}
+
+// ════ ÉCHANGES ════
+let echTab='all';
+function setEchTab(t,btn){
+  echTab=t;document.querySelectorAll('#screen-ech .ct').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');
+  renderExchanges();
+}
+function renderExchanges(){
+  const list=echTab==='all'?EXCHANGES:EXCHANGES.filter(e=>e.type===echTab);
+  document.getElementById('ech-list').innerHTML=list.map((e,i)=>{
+    const typeTxt=e.type==='vente'?'VENTE':e.type==='achat'?'ACHAT':'TROC';
+    const typeCls=e.type==='vente'?'et-sell':e.type==='achat'?'et-buy':'et-swap';
+    const itemCls=e.type==='vente'?'sell':e.type==='achat'?'buy':'swap';
+    const isMyTree=G.trees.find(t=>t.name===e.treeName&&t.owner==='you');
+    return `<div class="ech-item ${itemCls}">
+      <div class="ech-top">
+        <div class="ech-type ${typeCls}">${typeTxt}</div>
+        <div class="ech-tree-name">${e.type==='swap'?'🔀 ':''}${e.treeName}</div>
+        ${e.price>0?`<div class="ech-price">${e.price} 💰<small>${e.rnd>0?e.rnd+' 🪵':''}</small></div>`:`<div class="ech-price">${e.rnd} 🪵<small>TROC</small></div>`}
+      </div>
+      <div class="ech-info">${e.treeSpec}<br><span style="color:var(--gray2);font-size:9px">${e.desc}</span></div>
+      <div class="ech-seller">Proposé par <b>${e.seller}</b>${e.passif>0?` · +${e.passif}/h passif`:''}</div>
+      <div class="ech-actions" style="margin-top:8px">
+        ${e.type==='vente'?`<button class="ech-btn ech-btn-buy" onclick="buyExchange(${i})" ${G.coins<e.price?'disabled':''}>ACHETER — ${e.price}💰</button>`:''}
+        ${e.type==='achat'?`<button class="ech-btn ech-btn-prop" onclick="toast('Proposition envoyée à ${e.seller} !')">PROPOSER UN ARBRE</button>`:''}
+        ${e.type==='swap'?`<button class="ech-btn ech-btn-prop" onclick="toast('Demande d\'échange envoyée à ${e.seller} !')">PROPOSER TROC</button>`:''}
+        <button class="ech-btn ech-btn-cancel" onclick="openPlayer(RIVALS.find(r=>r.name==='${e.seller}')||{name:'${e.seller}',rnd:300,trees:2,clan:'?',ava:'🌳'})">PROFIL</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function buyExchange(i){
+  const e=EXCHANGES[i];if(G.coins<e.price){toast('Pas assez de pièces !');return;}
+  G.coins-=e.price;G.rndFx+=e.rnd;
+  toast(`✅ Acheté ${e.treeName} pour ${e.price}💰 !`);
+  EXCHANGES.splice(i,1);renderExchanges();renderProfile();
+}
+function proposeEch(id){
+  const t=G.trees[id];
+  toast(`🔀 Offre de vente pour ${t.name} créée ! Visible dans Échanges.`);
+}
+
+// ════ PROFIL ════
+function renderProfile(){
+  document.getElementById('prof-rank').textContent=getRank(totalRnd());
+  document.getElementById('ps-trees').textContent=ownCount();
+  document.getElementById('ps-mis').textContent=G.cMissions;
+  document.getElementById('ps-vic').textContent=G.victories;
+  document.getElementById('ec-coins').textContent=G.coins;
+  document.getElementById('ec-rfx').textContent=G.rndFx;
+  document.getElementById('ec-rps').textContent=Math.floor(G.rndPs);
+  document.getElementById('ec-rate').textContent=passRate()+'/h';
+  ['coins-map','coins-mis','coins-ech','coins-pro'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=G.coins});
+}
+
+// ════ RENDER ALL ════
+function renderAll(){renderMap();renderTrees();renderMissions();renderLeaderboard();renderClans();renderExchanges();renderProfile();}
+
+// ════ TREE MODAL ════
+let curTree=null;
+function openTree(id){
+  curTree=id;
+  const t=G.trees[id];
+  const owned=t.owner==='you',rival=t.owner==='rival';
+  const ac=atkCost(t);
+  document.getElementById('mcontent').innerHTML=`
+    <div class="mth">
+      <div class="mti">${tEmo(t)}</div>
+      <div class="mtm">
+        <div class="mt-tier">${t.tier} ${t.tierN}</div>
+        <div class="mt-name">${t.name}</div>
+        <div class="mt-spe">${t.species} · ${t.age} ans</div>
+      </div>
+      <div><div class="mt-rnd">${t.rondins} 🪵<small>RONDINS FIXES${owned?' · +'+t.passif+'/h passif':''}</small></div></div>
+    </div>
+    <div class="mbio-grid">
+      <div class="mbs co2"><div class="mbs-icon">🌫️</div><span class="mbs-val">${t.co2}</span><div class="mbs-lbl">CO₂ séquestré/an</div><div class="mbs-sub">${t.co2s}</div></div>
+      <div class="mbs temp"><div class="mbs-icon">🌡️</div><span class="mbs-val">${t.temp}</span><div class="mbs-lbl">Réduction thermique</div><div class="mbs-sub">${t.temps}</div></div>
+      <div class="mbs ombre"><div class="mbs-icon">☂️</div><span class="mbs-val">${t.ombre}</span><div class="mbs-lbl">Rayon d'ombre</div><div class="mbs-sub">${t.ombs}</div></div>
+      <div class="mbs age"><div class="mbs-icon">🌱</div><span class="mbs-val">${t.age} <span style="font-size:13px">ans</span></span><div class="mbs-lbl">Santé</div><div class="mbs-sub">${t.sante}</div></div>
+    </div>
+    ${t.defStake>0?`<div class="mstake">
+      <div class="mstake-r"><div class="mstake-lbl">Mise de défense</div><div class="mstake-val">${t.defStake} 💰</div></div>
+      <div class="mstake-exp">${owned?`Cette mise vous est reversée si quelqu'un vous vole cet arbre. Le prix de l'arbre (${t.rondins}💰) disparaît du jeu.`:`Pour attaquer cet arbre, vous devez payer ${t.rondins} (prix) + ${t.defStake} (défense) = <strong style="color:var(--goldl)">${ac} 💰</strong>. Si vous gagnez, le défenseur récupère ses ${t.defStake}💰.`}</div>
+    </div>`:''}
+    <div class="mowner">
+      <div class="mowner-ava">${owned?'🐺':rival?'💀':'🏕️'}</div>
+      <div><div class="mowner-n">${owned?'Ranger_Noir (vous)':rival?'MarcelVert_63':'Arbre libre — à réclamer'}</div>
+      <div class="mowner-s">${owned?'🌿 Les Verts du Plateau':rival?'💀 La Guilde Sombre':'Aucun propriétaire'}</div></div>
+    </div>
+    <div class="macts">
+      ${!t.owner?`<button class="btn-f btn-fc" onclick="claimTree(${t.id})" ${G.coins<t.rondins?'disabled':''}><span>🏴 RÉCLAMER</span><span class="cost">${t.rondins} 💰 requis</span></button>${G.coins<t.rondins?`<div class="mwarn">Il manque ${t.rondins-G.coins}💰 — collectez dans le parc.</div>`:''}`:''}
+      ${owned?`<button class="btn-f btn-fd" onclick="defendTree(${t.id})" ${G.coins<25?'disabled':''}><span>🛡 RENFORCER (+25💰 → mise)</span><span class="cost">Mise totale: ${t.defStake+25}💰</span></button><div class="mwarn">Votre mise (${t.defStake}💰) vous est reversée si vous perdez cet arbre.</div>`:''}
+      ${rival?`<button class="btn-f btn-fa" onclick="attackTree(${t.id})" ${G.coins<ac?'disabled':''}><span>⚔️ ATTAQUER</span><span class="cost">${ac} 💰 (prix + défense)</span></button>${G.coins<ac?`<div class="mwarn">Il manque ${ac-G.coins}💰.</div>`:''}`:''}
+    </div>
+    <div id="mmsg"></div>`;
+  document.getElementById('moverlay').classList.add('open');
+}
+function closeModal(){document.getElementById('moverlay').classList.remove('open');curTree=null}
+
+// ════ ACTIONS ════
+function claimTree(id){
+  const t=G.trees[id];if(!t||t.owner||G.coins<t.rondins)return;
+  G.coins-=t.rondins;t.owner='you';t.defStake=0;G.rndFx+=t.rondins;
+  G.missions.forEach(m=>{if(!m.claimed){if(m.key==='own')m.prog=Math.min(m.goal,1);if(m.key==='own3')m.prog=Math.min(m.goal,ownCount()+1);if(m.key==='ctrl')m.prog=Math.min(m.goal,pkTrees(G.curPark).filter(t2=>t2.owner==='you').length+1)}});
+  toast(`🌳 ${t.name} réclamé ! +${t.rondins} 🪵`);closeModal();renderAll();
+}
+function defendTree(id){
+  const t=G.trees[id];if(!t||t.owner!=='you'||G.coins<25)return;
+  G.coins-=25;t.defStake+=25;mProg('def');
+  toast(`🛡 Défense renforcée — mise totale : ${t.defStake}💰`);closeModal();renderAll();
+}
+function attackTree(id){
+  const t=G.trees[id];if(!t||t.owner!=='rival')return;
+  const ac=atkCost(t);mProg('atk');
+  if(G.coins<ac){document.getElementById('mmsg').textContent=`Manque ${ac-G.coins}💰`;document.getElementById('mmsg').className='msg-err';return;}
+  G.coins-=ac;
+  const won=Math.random()>.42;
+  if(won){
+    G.rndFx+=t.rondins;t.owner='you';t.defStake=0;G.victories++;mProg('conq');
+    toast(`⚔️ Victoire ! ${t.name} conquis ! +${t.rondins}🪵`);closeModal();
+  } else {
+    toast(`❌ Attaque repoussée — ${ac}💰 perdus. Le rival récupère sa mise.`);
+    document.getElementById('mmsg').textContent='Attaque échouée.';
+    document.getElementById('mmsg').className='msg-err';
+  }
+  renderAll();
+}
+
+// ════ TIMERS ════
+setInterval(()=>{
+  // Passive rondins (accéléré ×60 pour démo)
+  const r=passRate();if(r>0)G.rndPs+=r/60;
+  // Cooldowns
+  if(G.earnCD>0){G.earnCD--;
+    const cd=document.getElementById('earncd');
+    if(cd)cd.textContent=G.earnCD>0?`Prochain dans ${G.earnCD}s`:'';
+    document.getElementById('earn-badge').textContent=G.earnCD>0?G.earnCD+'s':'+15';
+  }
+  if(G.photoCd>0){G.photoCd--;document.getElementById('photo-cd').textContent=G.photoCd>0?`${G.photoCd}s`:'Disponible';}
+  if(G.eventCd>0){G.eventCd--;document.getElementById('event-cd').textContent=G.eventCd>0?`${G.eventCd}s`:'Disponible';}
+  // Mission regen
+  if(G.regenTimer>0){G.regenTimer--;if(G.regenTimer===0){freshMissions();renderMissions();toast('✨ Nouvelles missions disponibles !');}}
+  // Profile update
+  if(document.getElementById('screen-profil').classList.contains('active'))renderProfile();
+  if(document.getElementById('screen-mis').classList.contains('active')&&G.regenTimer>0)renderMissions();
+},1000);
+
+// Rival AI
+setInterval(()=>{
+  const all=G.trees.filter(t=>!t.owner);
+  const myW=G.trees.filter(t=>t.owner==='you'&&t.defStake<20);
+  if(all.length&&Math.random()<.3){
+    const t=all[Math.floor(Math.random()*all.length)];
+    t.owner='rival';t.defStake=20+Math.floor(Math.random()*30);
+    toast(`⚠️ MarcelVert a réclamé ${t.name} !`);renderAll();
+  } else if(myW.length&&Math.random()<.35){
+    const t=myW[Math.floor(Math.random()*myW.length)];
+    const ac=atkCost(t);
+    if(Math.random()>.5){
+      const stk=t.defStake;G.rndFx-=Math.min(G.rndFx,t.rondins);G.coins+=stk;
+      t.owner='rival';t.defStake=25;
+      toast(`💀 ${t.name} perdu ! Mise récupérée : ${stk}💰`);
+    } else {toast(`🛡 Attaque repoussée sur ${t.name} !`);}
+    renderAll();
+  }
+},22000);
+
+// Clock
+function tick(){const n=new Date();document.getElementById('clock').textContent=n.toLocaleTimeString('fr',{hour:'2-digit',minute:'2-digit'});}
+setInterval(tick,1000);tick();
+
+// Init
+document.getElementById('gpsbanner').onclick=togglePark;
+document.getElementById('lb-parks').style.display='none';
+renderAll();
+</script>
+</body>
+</html>

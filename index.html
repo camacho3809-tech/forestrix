@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#203f32">
+<meta name="theme-color" content="#080808">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./forestrix-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -12,11 +12,11 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Fredoka:wght@500;600;700&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&amp;family=Barlow+Condensed:wght@500;600;700&amp;family=Bebas+Neue&amp;display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" integrity="sha256-YU3qCpj/P06tdPBJGPax0bm6Q1wltfwjsho5TR4+TYc=" crossorigin="anonymous">
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" integrity="sha256-Hk4dIpcqOSb0hZjgyvFOP+cEmDXUKKNE/tT542ZbNQg=" crossorigin="anonymous"></script>
 <style>
-  :root{color-scheme:light;--pine:#17382b;--green:#235e43;--ink:#162b21;--muted:#496354;--paper:#f6f8f1;--line:#dce5d8;--white:#fff;--free:#59615e;--mine:#227847;--rival:#ad332e;--dry:#855331;--gold:#ffdf91}
+  :root{color-scheme:dark;--pine:#17382b;--green:#235e43;--ink:#162b21;--muted:#496354;--paper:#f6f8f1;--line:#dce5d8;--white:#fff;--free:#59615e;--mine:#227847;--rival:#ad332e;--dry:#855331;--gold:#ffdf91}
   *{box-sizing:border-box}
   body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.4 system-ui,-apple-system,sans-serif}
   button{font:inherit;cursor:pointer}
@@ -395,6 +395,181 @@
   .herbarium-cluster{border-radius:50%;background:#e0e6d7;border:1px solid #82947e;font-size:11px}
   .map-toolbar{margin-top:23px}
   .grove-glyph .tree-art{filter:drop-shadow(5px 2px 0 #365e4255) drop-shadow(-5px 2px 0 #365e4255)}
+  /* Direction visuelle des prototypes Forestrix. */
+  :root{
+    color-scheme:dark;
+    --paper:#080808;--surface:#0D130A;--white:#111A0D;
+    --pine:#1C2B10;--green:#2D4219;--moss:#3E5C24;--fern:#4A6E2A;
+    --gold:#C9952A;--gold-light:#D4A93C;--gold-dark:#8B6914;
+    --burgundy:#8B1A28;--rival:#A52535;--ink:#D4C9A8;--stone:#8A8070;
+    --muted:#A99E89;--line:#3E5C24;
+    --free:#8A8070;--mine:#7EC850;--clan:#4A9ED4;--dry:#8B6914;
+    --game-display:"Bebas Neue","Barlow Condensed",sans-serif;
+    --game-label:"Barlow Condensed",sans-serif;
+  }
+  body{background:var(--paper);color:var(--ink);font:400 15px/1.4 Barlow,system-ui,sans-serif}
+  #app{background:var(--paper);box-shadow:0 0 0 1px var(--pine)}
+  h1,h2,h3,#profile h4{font:400 28px/1.04 var(--game-display);letter-spacing:.035em}
+  h1{font-size:33px;color:var(--gold-light)}
+  h3,#profile h4{font-size:22px}
+  small,label,dt,summary,.hint,.risk,.legend,.radar-label,#gps-status{font-family:var(--game-label);font-weight:600;letter-spacing:.025em}
+  small,.muted,.hint,.legend{color:var(--muted)}
+  a{color:var(--gold-light)}
+  :is(a,button,input,select,textarea):focus-visible{outline:2px solid var(--gold-light);outline-offset:3px}
+  button:not(:disabled):active:is(.primary,.secondary,#position-mode,#locate,.close){box-shadow:none}
+  button,button.primary,button.secondary,#position-mode,#locate,.close{
+    border-radius:4px;font-family:var(--game-label);font-weight:700;letter-spacing:.055em
+  }
+  button.primary{background:var(--gold-light);color:var(--paper);border-color:var(--gold);box-shadow:0 2px 0 var(--gold-dark)}
+  button.secondary,#position-mode,#locate,#map-help,.close{
+    background:var(--pine);color:var(--ink);border:1px solid var(--fern);box-shadow:none;border-radius:4px
+  }
+  button[aria-pressed="true"].secondary{background:var(--green);border-color:var(--gold);color:var(--ink)}
+  button:disabled{opacity:1;color:var(--muted)}
+  button.primary:disabled{background:var(--pine);border-color:var(--moss)}
+  #app header,#app nav{background:#080808;border-color:var(--moss);border-radius:5px;box-shadow:0 5px 18px #0009}
+  #app header small{color:var(--ink)}
+  .brand-token,.welcome-crest{
+    color:var(--gold-light);background:linear-gradient(145deg,var(--green),var(--pine));border:1px solid var(--gold-dark);
+    border-radius:5px;box-shadow:none
+  }
+  #park-select,#park-select option{color:var(--ink);background:var(--paper);font:600 13px var(--game-label)}
+  #wallet,.header-streak{background:var(--pine);border:1px solid var(--gold-dark);border-radius:4px;color:var(--gold-light);box-shadow:none}
+  #wallet{font:400 21px/1 var(--game-display)}
+  #wallet .ui-icon{color:var(--gold-light);fill:var(--gold-dark)}
+  #app nav{
+    width:100%;margin:0;padding:3px var(--edge-r) calc(4px + env(safe-area-inset-bottom)) var(--edge);
+    border:0;border-top:1px solid var(--moss);border-radius:0
+  }
+  #app nav button{border-radius:3px;color:var(--muted);font:700 12px/1.12 var(--game-label);letter-spacing:.06em;text-transform:uppercase}
+  #app nav button[aria-selected="true"]{border:1px solid var(--gold-dark);color:var(--gold-light);background:var(--pine);box-shadow:none}
+  .nav-icon{font-size:18px;line-height:1.1}
+  .screen:not(.map-screen){background:var(--paper)}
+  .entry,.tile,.content .entry,.content .tile,#technical-details{background:var(--surface);border:1px solid var(--moss);border-radius:10px;box-shadow:none}
+  .content .rare,.badge-grid .badge-tile.earned{background:linear-gradient(145deg,var(--pine),var(--surface));border-color:var(--gold-dark)}
+  .field-card .card-emblem{color:var(--mine)}
+  .field-card.rare .card-emblem{color:var(--gold-light)}
+  .badge-grid .badge-tile{background:var(--paper);border-color:var(--moss);color:var(--ink)}
+  .badge-grid .badge-tile.earned{color:var(--ink)}
+  .locked-rewards{color:var(--muted)}
+  .risk{border-radius:4px}
+  .risk.alto,#duel-banner,#app #duel-banner{background:var(--burgundy);color:#FFF0D5;border-color:var(--rival)}
+  .risk.medio,#storage-error,#tile-warning{background:var(--paper);color:var(--gold-light);border-color:var(--gold-dark)}
+  .risk.bajo{background:var(--pine);color:var(--ink)}
+  progress{height:8px;accent-color:var(--gold-light);appearance:none;border:0;border-radius:4px;overflow:hidden;background:var(--pine)}
+  progress::-webkit-progress-bar{background:var(--pine)}
+  progress::-webkit-progress-value{background:linear-gradient(90deg,var(--fern),var(--gold-light));border-radius:4px}
+  progress::-moz-progress-bar{background:var(--gold-light)}
+  .bar-track{border-color:var(--moss);background:repeating-linear-gradient(0deg,var(--green) 0,var(--green) 1px,transparent 1px,transparent 25px)}
+  .bar-track span{background:var(--gold)}
+  #species-dialog,#tutorial-dialog,#opinion-dialog,#welcome-dialog,.clan-dialog,#expedition-dialog{
+    color:var(--ink);background:var(--surface);border:1px solid var(--gold-dark);border-radius:12px;box-shadow:0 12px 40px #000b
+  }
+  dialog::backdrop,#map-bottom::backdrop,#species-dialog::backdrop,#tutorial-dialog::backdrop,#opinion-dialog::backdrop,#welcome-dialog::backdrop{background:#080808bf}
+  #species-dialog select,#welcome-dialog input,#welcome-dialog select,#opinion-form textarea,.clan-dialog input:not([type=checkbox]),.clan-dialog select,#park-search{
+    color:var(--ink);background:var(--paper);border:1px solid var(--fern);border-radius:4px
+  }
+  #notice,#dossier-notice,#progress-notice,#progress-notice.card-reveal,.result-card{
+    background:var(--pine);color:var(--ink);border:1px solid var(--gold-dark);border-radius:10px;box-shadow:0 5px 16px #0009
+  }
+  #result-screen[data-outcome="perdido"] .result-card{background:var(--burgundy);border-color:var(--rival);color:#FFF0D5}
+  #panel-mapa,#panel-mapa .map-wrap,#panel-mapa #map{background:var(--pine)}
+  #map .leaflet-local-basemap-pane{filter:brightness(.37) saturate(.6) contrast(1.13)}
+  #map .leaflet-tile-pane{filter:sepia(.24) hue-rotate(22deg)}
+  #map .leaflet-control-attribution{background:var(--paper);color:var(--ink);max-width:calc(100% - 8px);line-height:1.24}
+  #map .leaflet-control-attribution a{color:var(--gold-light)}
+  #map .leaflet-control-zoom a{background:var(--paper);color:var(--ink);border-color:var(--moss)}
+  #map .leaflet-control-zoom .leaflet-disabled{color:var(--muted);background:var(--pine)}
+  #map-zone{background:var(--paper);color:var(--gold-light);border-radius:3px;font:700 12px/1.15 var(--game-label);letter-spacing:.05em;text-transform:uppercase}
+  .map-discovery,.map-toolbar,.recommendation,#map-overview{
+    background:var(--paper);border:1px solid var(--moss);border-radius:5px;box-shadow:0 4px 14px #0008
+  }
+  .map-discovery{
+    position:absolute;z-index:3;top:calc(var(--hud-top) + 26px);left:var(--edge);right:var(--edge-r);
+    display:flex;align-items:center;gap:5px;padding:3px
+  }
+  #tree-filters{display:flex;gap:3px;flex-shrink:0}
+  #tree-filters button,#park-search-form button{
+    min-height:40px;padding:3px 6px;background:var(--pine);color:var(--ink);border:1px solid var(--moss);font-size:13px
+  }
+  #tree-filters button[aria-pressed="true"]{color:var(--paper);background:var(--gold-light);border-color:var(--gold-light)}
+  #park-search-form{display:flex;gap:3px;min-width:0;flex:1}
+  #park-search{width:100%;min-width:0;padding:3px 5px;font:600 13px var(--game-label)}
+  #park-search::placeholder{color:var(--muted)}
+  #park-search-form button{min-width:32px;font-size:19px;line-height:1}
+  #app .map-toolbar{top:calc(var(--hud-top) + 75px);margin-top:0}
+  #radar{color:var(--ink)}
+  #radar[data-heat="frío"]{color:#83C8F3}
+  #radar[data-heat="templado"]{color:var(--gold-light)}
+  #radar[data-heat="caliente"]{color:#F4A0A1}
+  .radar-dial{color:var(--mine);background:var(--pine);border-color:var(--fern);box-shadow:inset 0 0 0 3px var(--green)}
+  .radar-meter i{background:var(--green)}
+  .recommendation{top:calc(var(--hud-top) + 130px);padding-left:10px;color:var(--ink)}
+  .recommendation::before{background:var(--paper);border-color:var(--moss)}
+  .recommendation h2{color:var(--gold-light);font:700 13px var(--game-label);text-transform:uppercase;letter-spacing:.07em}
+  #close-recommendation,.cluster-count{color:var(--ink)}
+  .map-control-stack{top:calc(var(--hud-top) + 130px)}
+  #map-overview{top:calc(var(--hud-top) + 130px)}
+  #map .leaflet-top.leaflet-right{top:calc(var(--hud-top) + 218px)}
+  #weekend-banner{top:auto;bottom:calc(var(--hud-bottom) + 45px)}
+  .herbarium-marker{color:var(--free)}
+  .herbarium-marker:empty::after{background:var(--free);border-color:var(--pine)}
+  .herbarium-cluster{color:var(--ink);background:var(--pine);border-color:var(--fern)}
+  .cluster-count{background:var(--pine);border-color:var(--gold);border-radius:4px}
+  #map-bottom,#tree-detail,.dossier-actions{background:var(--paper);color:var(--ink)}
+  #app #map-bottom .dossier-head{color:var(--gold-light);border-bottom-color:var(--moss)}
+  .dossier-head>span{font:700 14px var(--game-label);letter-spacing:.08em;text-transform:uppercase}
+  .dossier-hero{
+    height:clamp(114px,27dvh,195px);border-radius:10px;border:1px solid var(--moss);
+    color:var(--fern);--team:var(--gold-light);
+    background:radial-gradient(ellipse at 45% 30%,var(--green),var(--pine) 56%,var(--paper))
+  }
+  .dossier-identity{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}
+  #dossier-title{font-size:clamp(30px,8.5vw,44px);overflow-wrap:anywhere}
+  .dossier-species,.dossier-facts dt,.dossier-actions p{color:var(--muted)}
+  .dossier-facts dd{color:var(--ink);font:400 26px var(--game-display)}
+  .dossier-value{color:var(--gold-light);border-left:1px solid var(--gold-dark);padding-left:10px;text-align:right;line-height:1}
+  .dossier-value strong{display:block;font:400 42px/.92 var(--game-display)}
+  .dossier-value span{font:700 12px var(--game-label);letter-spacing:.08em;text-transform:uppercase}
+  .dossier-life{margin-top:7px}
+  .dossier-life strong{font:400 25px var(--game-display);color:var(--gold-light)}
+  .dossier-actions,.tree-timeline li,.rank-list li{border-color:var(--moss)}
+  #profile .profile-hero{background:linear-gradient(155deg,var(--pine) 0,var(--surface) 57%,var(--paper) 100%);padding:14px}
+  .profile-hero h2{font-size:32px}
+  .profile-rank,.profile-streak,.rank-points{color:var(--gold-light)}
+  .profile-rank{font:700 14px var(--game-label);letter-spacing:.06em;text-transform:uppercase}
+  .animal-avatar{
+    display:grid;place-items:center;flex:none;width:53px;height:53px;border-radius:10px;
+    border:1px solid var(--gold);background:var(--green);font-size:27px
+  }
+  .profile-power{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+  .profile-power .tile{background:var(--paper);text-align:center}
+  .profile-power strong{font:400 42px/.95 var(--game-display)}
+  .profile-power .tile:first-child strong{color:var(--gold-light)}
+  .profile-power small,.profile-numbers small{letter-spacing:.075em;text-transform:uppercase}
+  .rank-scopes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+  .rank-scopes button{padding:5px 3px;text-transform:uppercase}
+  .rank-podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;align-items:end;list-style:none;padding:0;margin:12px 0 8px}
+  .rank-podium-item{display:grid;justify-items:center;gap:4px;min-width:0;overflow-wrap:anywhere;text-align:center}
+  .rank-podium:has(> :nth-child(2)) .rank-podium-1{grid-column:2;grid-row:1}
+  .rank-podium-2{grid-column:1;grid-row:1}
+  .rank-podium-3{grid-column:3;grid-row:1}
+  .rank-podium-item .animal-avatar{width:43px;height:43px;font-size:22px}
+  .rank-podium-1 .animal-avatar{width:54px;height:54px;font-size:28px}
+  .rank-podium-item > strong{color:var(--ink);font:700 14px var(--game-label)}
+  .rank-podium-step{
+    display:grid;place-items:center;width:100%;height:30px;border:1px solid var(--fern);border-radius:5px 5px 0 0;
+    background:var(--pine);color:var(--ink);font:400 22px var(--game-display)
+  }
+  .rank-podium-1 .rank-podium-step{height:48px;background:var(--gold-light);color:var(--paper);border-color:var(--gold)}
+  .rank-podium-2 .rank-podium-step{height:38px;background:var(--green)}
+  .rank-podium-item.rank-mine strong,.rank-list .rank-mine{color:var(--mine)}
+  .clan-line strong{color:var(--ink)!important}
+  @media(max-height:520px){
+    #map .leaflet-top.leaflet-right{top:calc(var(--hud-top) + 124px)}
+    .map-control-stack{top:auto;bottom:calc(var(--hud-bottom) + 49px)}
+    .recommendation{top:calc(var(--hud-top) + 126px)}
+  }
 </style>
 </head>
 <body>
@@ -439,7 +614,6 @@
     <header>
       <div class="brand"><span class="brand-token"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-brand"></use></svg></span><div><h1>Forestrix</h1><select id="park-select" aria-label="Parc" data-es-label="Parque">
         <option value="oxford">University Parks · Oxford</option>
-        <option value="paris">Bois de Boulogne · Paris</option>
       </select></div></div>
       <div class="wallet-status"><span class="header-streak" id="header-streak" aria-label="Série quotidienne">🔥 <span id="header-streak-count">0</span></span><div id="wallet" aria-label="Ton solde de Savia" data-es-label="Tu saldo de Savia"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-savia"></use></svg><span id="wallet-amount">20 Savia</span></div></div>
     </header>
@@ -452,6 +626,18 @@
   <main>
     <section id="panel-mapa" class="screen map-screen" role="tabpanel" aria-labelledby="tab-mapa">
       <div id="map-zone" aria-live="polite"></div>
+      <div class="map-discovery">
+        <div id="tree-filters" role="group" aria-label="Filtrer les arbres" data-es-label="Filtrar árboles">
+          <button type="button" data-filter="mine" aria-pressed="false"><span data-es="Mi árbol">Mon arbre</span></button>
+          <button type="button" data-filter="free" aria-pressed="false"><span data-es="Libre">Libre</span></button>
+          <button type="button" data-filter="taken" aria-pressed="false"><span data-es="Ocupado">Pris</span></button>
+        </div>
+        <form id="park-search-form" role="search">
+          <input id="park-search" type="search" list="park-search-options" autocomplete="off" aria-label="Chercher un parc" data-es-label="Buscar un parque">
+          <datalist id="park-search-options"></datalist>
+          <button type="submit" aria-label="Chercher" data-es-label="Buscar">⌕</button>
+        </form>
+      </div>
       <div class="map-toolbar">
         <div class="radar-block"><span class="radar-dial"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-radar"></use></svg></span><div><div class="radar-label" id="radar"><span data-es="Radar · esperando ubicación">Radar · en attente de position</span></div><div class="radar-meter" aria-hidden="true"><i></i><i></i><i></i></div><small id="gps-status" aria-live="polite"><span data-es="Buscando GPS…">Recherche du GPS…</span></small></div></div>
         <button id="position-mode" type="button"><span data-es="Modo prueba">Mode test</span></button>
@@ -501,11 +687,11 @@
     </section>
   </main>
   <nav role="tablist" aria-label="Écrans" data-es-label="Pantallas">
-    <button id="tab-mapa" role="tab" aria-controls="panel-mapa" aria-selected="true" type="button"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-map"></use></svg><span><span data-es="Mapa">Carte</span></span></button>
-    <button id="tab-herbario" role="tab" aria-controls="panel-herbario" aria-selected="false" type="button"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-book"></use></svg><span><span data-es="Herbario">Herbier</span></span></button>
-    <button id="tab-arboles" role="tab" aria-controls="panel-arboles" aria-selected="false" type="button"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-wood"></use></svg><span><span data-es="Mis árboles">Mes arbres</span></span></button>
-    <button id="tab-misiones" role="tab" aria-controls="panel-misiones" aria-selected="false" type="button"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-flag"></use></svg><span data-es="Misiones">Missions</span></button>
-    <button id="tab-perfil" role="tab" aria-controls="panel-perfil" aria-selected="false" type="button"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-profile"></use></svg><span><span data-es="Perfil">Profil</span></span></button>
+    <button id="tab-mapa" role="tab" aria-controls="panel-mapa" aria-selected="true" type="button"><span class="nav-icon" aria-hidden="true">🗺️</span><span><span data-es="Mapa">Carte</span></span></button>
+    <button id="tab-herbario" role="tab" aria-controls="panel-herbario" aria-selected="false" type="button"><span class="nav-icon" aria-hidden="true">📖</span><span><span data-es="Herbario">Herbier</span></span></button>
+    <button id="tab-arboles" role="tab" aria-controls="panel-arboles" aria-selected="false" type="button"><span class="nav-icon" aria-hidden="true">🌳</span><span><span data-es="Mis árboles">Mes arbres</span></span></button>
+    <button id="tab-misiones" role="tab" aria-controls="panel-misiones" aria-selected="false" type="button"><span class="nav-icon" aria-hidden="true">🎯</span><span data-es="Misiones">Missions</span></button>
+    <button id="tab-perfil" role="tab" aria-controls="panel-perfil" aria-selected="false" type="button"><span class="nav-icon" aria-hidden="true">👤</span><span><span data-es="Perfil">Profil</span></span></button>
   </nav>
 </div>
 <aside id="weekend-banner" class="entry" role="status" hidden></aside>
@@ -593,9 +779,10 @@ const PARKS = {
   oxford:{name:'University Parks',city:'Oxford',center:[51.762,-1.254]},
   paris:{name:'Bois de Boulogne',city:'Paris',center:[48.864,2.249]}
 };
+const playableParks = ['oxford'];
 const parkParams = new URLSearchParams(location.search);
 const requestedPark=parkParams.get('park');
-const parkId = Object.hasOwn(PARKS,requestedPark) ? requestedPark : 'oxford';
+const parkId = playableParks.includes(requestedPark) ? requestedPark : 'oxford';
 const park = PARKS[parkId];
 const isParis = parkId === 'paris';
 const parkLabel = park.name + ', ' + park.city;
@@ -610,12 +797,38 @@ function parkUrl(destination,treeId) {
   return url;
 }
 const parkSelect = $('park-select');
-for(const [id,definition] of Object.entries(PARKS)) {
+for (const id of playableParks) {
+  const definition=PARKS[id];
   if ([...parkSelect.options].some(option=>option.value===id)) continue;
   parkSelect.add(new Option(definition.name+' · '+definition.city,id));
 }
 parkSelect.value = parkId;
+const parkSearch = $('park-search');
+parkSearch.placeholder = say('Parc…','Parque…');
+for (const label of [...parkSelect.options].map(option=>option.textContent)) {
+  $('park-search-options').append(new Option(label,label));
+}
+function findPark() {
+  const query=parkSearch.value.trim().toLocaleLowerCase();
+  if (!query) return;
+  const matches=[...parkSelect.options].filter(option=>option.textContent.toLocaleLowerCase().includes(query));
+  if (matches.length!==1) {
+    parkSearch.setCustomValidity(say('Choisis un parc dans la liste.','Elige un parque de la lista.'));
+    parkSearch.reportValidity();
+    return;
+  }
+  parkSearch.value='';
+  if (matches[0].value===parkId) return;
+  parkSelect.value=matches[0].value;
+  parkSelect.dispatchEvent(new Event('change'));
+}
+parkSearch.addEventListener('input',()=>parkSearch.setCustomValidity(''));
+$('park-search-form').addEventListener('submit',event=>{event.preventDefault();findPark();});
+parkSearch.addEventListener('change',()=>{
+  if ([...parkSelect.options].some(option=>option.textContent===parkSearch.value)) findPark();
+});
 parkSelect.addEventListener('change', () => {
+  if (!playableParks.includes(parkSelect.value)) return;
   save();
   location.assign(parkUrl(parkSelect.value));
 });
@@ -773,7 +986,7 @@ let visibleSince = document.hidden ? null : Date.now();
 let lastTick = Date.now(), noticeTimer, lastPaint = {}, loading = false;
 const markerById = new Map();
 const heatName = heat => language==='fr' ? ({frío:'froid',templado:'tiède',caliente:'chaud'})[heat] : heat;
-const colors = {libre:'#79816a', mio:'#55a44e', rival:'#c5585b', clan:'#398fc2', seco:'#936a4b'};
+const colors = {libre:'#8A8070', mio:'#7EC850', rival:'#A52535', clan:'#4A9ED4', seco:'#8B6914'};
 const html = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const number = new Intl.NumberFormat(locale);
 const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)') || {matches:false};
@@ -837,10 +1050,10 @@ function addParkEffects() {
   shadePane.style.zIndex = '310';
   shadePane.style.pointerEvents = 'none';
   fogLayer = L.polygon([PARK_FOG_FRAME,...outline],{
-    pane:'park-fog',stroke:false,fillColor:'#223d35',fillOpacity:.61,interactive:false
+    pane:'park-fog',stroke:false,fillColor:'#080808',fillOpacity:.72,interactive:false
   }).addTo(map);
   parkLayer = L.polygon(outline,{
-    className:'park-glow',color:'#ddfa91',weight:3,opacity:.94,fillColor:'#b4db67',
+    className:'park-glow',color:'#7EC850',weight:2,opacity:.9,fillColor:'#4A6E2A',
     fillOpacity:.10,interactive:false,lineCap:'round'
   }).addTo(map);
 }
@@ -1356,8 +1569,8 @@ function unpackMapPath(path) {
 }
 function addBasemap() {
   if (parkId!=='oxford') {
-    const tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
-      maxNativeZoom:19,maxZoom:20,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · <a href="https://opendata.paris.fr/explore/dataset/les-arbres/">Ville de Paris</a> (ODbL)'
+    const tiles=L.tileLayer('https://basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png',{
+      maxNativeZoom:19,maxZoom:20,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://carto.com/attributions">CARTO</a> · <a href="https://opendata.paris.fr/explore/dataset/les-arbres/">Ville de Paris</a> (ODbL)'
     });
     tiles.on('tileerror',()=>{
       $('tile-warning').textContent=say('Fond de carte partiellement indisponible. Les arbres et le périmètre restent visibles.','Parte del mapa base no está disponible. Los árboles y el perímetro siguen visibles.');
@@ -1447,18 +1660,36 @@ function rebuildMarkers() {
   refreshVisibleMarkers();
   drawPlayer();
 }
-function refreshVisibleMarkers() {
+let treeFilter = null;
+$('tree-filters').addEventListener('click',event=>{
+  const button=event.target.closest('button[data-filter]');
+  if (!button) return;
+  treeFilter=treeFilter===button.dataset.filter ? null : button.dataset.filter;
+  for (const control of $('tree-filters').querySelectorAll('button')) {
+    control.setAttribute('aria-pressed',String(control.dataset.filter===treeFilter));
+  }
+  refreshVisibleMarkers();
+  render();
+});
+function matchesTreeFilter(tree,now) {
+  if (!treeFilter) return true;
+  if (!tree.game) return false;
+  const condition=status(tree.id,now);
+  if (treeFilter==='mine') return condition==='mio' || condition==='seco';
+  return treeFilter==='free' ? condition==='libre' : condition==='clan' || condition==='rival';
+}
+function refreshVisibleMarkers(now=Date.now()) {
   if (!map || activeTab!=='mapa') return;
   const bounds=map.getBounds();
   for(const [id,item] of markerById) {
     const tree=trees.get(id);
-    if (tree && bounds.contains([tree.lat,tree.lng])) continue;
+    if (tree && bounds.contains([tree.lat,tree.lng]) && matchesTreeFilter(tree,now)) continue;
     item.group.removeLayer(item.marker);
     markerById.delete(id);
   }
-  const now=Date.now(), date=dayKey(now), game=[], herbarium=[];
+  const date=dayKey(now), game=[], herbarium=[];
   for(const tree of trees.values()) {
-    if(markerById.has(tree.id) || !bounds.contains([tree.lat,tree.lng])) continue;
+    if(markerById.has(tree.id) || !bounds.contains([tree.lat,tree.lng]) || !matchesTreeFilter(tree,now)) continue;
     const group=tree.game?markers:herbariumMarkers;
     const condition=status(tree.id,now);
     const foundAwake=!!state.awake[date]?.[tree.id];
@@ -1493,7 +1724,7 @@ function treeIcon(tree,condition,shines) {
   const claimed = recentClaims.has(tree.id) ? ' tree-claimed' : '';
   const contested=(tree.kind==='grove'?' grove-glyph':'')+(state.challenges[tree.id]?.direction==='in' ? ' contested' : '')+(isWeeklyTree(tree.id)||tree.remarkable?' week-tree':'');
   return L.divIcon({className:'tree-icon',html:'<span aria-hidden="true" class="tree-glyph '+tier+contested+
-    '" style="--crown:'+colors[condition]+';--team:'+colors[condition]+';--phase:-'+phase+'s;--period:'+period+'s">'+halo+awake+
+    '" style="--crown:'+(tier==='remarcable'?'#D4A93C':colors[condition])+';--team:'+colors[condition]+';--phase:-'+phase+'s;--period:'+period+'s">'+halo+awake+
     '<svg class="tree-art'+claimed+'" viewBox="0 0 50 50"><use href="#game-tree"></use></svg>'+spark+'</span>',
     iconSize:[size,size],iconAnchor:[size/2,size-6]});
 }
@@ -1603,6 +1834,7 @@ function renderMap(now) {
   const positionText = gpsText + (locationFix ? ' · ' + (inside ? say("dans le parc","dentro del parque") : say("hors du parc","fuera del parque")) : '');
   if ($('gps-status').textContent !== positionText) $('gps-status').textContent = positionText;
   $('position-mode').textContent = mode === 'test' ? say("Activer le GPS","Activar GPS") : say("Mode test","Modo prueba");
+  if (treeFilter) refreshVisibleMarkers(now);
   const changedGlow = [];
   for (const [id,item] of markerById) {
     const condition = status(id,now);
@@ -1675,6 +1907,9 @@ function renderHerbarium() {
     say("</div><h3>Cartes</h3>","</div><h3>Cartas</h3>")+(cards ? '<div class="cards">'+cards+'</div>' : say("<p class=\"hint\">Découvre ou soigne un arbre pour gagner une carte.</p>","<p class=\"hint\">Descubre o cuida un árbol para ganar una carta.</p>")));
   revealCards();
 }
+function treeMapButton(id) {
+  return playableParks.includes(parkOfTree(id)) ? utilityButton('show',say('Voir sur la carte','Ver en mapa'),id) : '';
+}
 function renderMyTrees(now) {
   const list = currentTrees(now);
   const entries = list.map(tree => {
@@ -1685,11 +1920,11 @@ function renderMyTrees(now) {
       '</p><p><strong>'+LEVELS[record.level-1]+'</strong> · '+(days ? days+say(" jours de vitalité sur 7"," de 7 días de vitalidad") : say("Sec · sera libre dans ","Seco · queda libre en ")+duration(record.until+3*DAY-now))+
       '</p><progress max="7" value="'+days+say("\" aria-label=\"Vitalité\"></progress>","\" aria-label=\"Vitalidad\"></progress>")+
       (challenge ? '<p><strong>'+html(challengeText(challenge,now))+'</strong></p>' : '')+
-      '<button type="button" class="secondary" data-action="show" data-id="'+html(tree.id)+say("\">Voir sur la carte</button>","\">Ver en mapa</button>")+(parkOfTree(tree.id)===parkId?treeActions(tree,now):'')+'</article>';
+      treeMapButton(tree.id)+(parkOfTree(tree.id)===parkId?treeActions(tree,now):'')+'</article>';
   }).join('');
   const outgoing = Object.entries(state.challenges).filter(([,challenge])=>challenge.direction === 'out')
     .map(([id,challenge])=>'<article class="entry"><h3>'+html(trees.has(id) ? treeTitle(trees.get(id)) : say("Arbre ","Árbol ")+id)+'</h3><p>'+html(challengeText(challenge,now))+
-      '</p><button type="button" class="secondary" data-action="show" data-id="'+html(id)+say("\">Voir sur la carte</button></article>","\">Ver en mapa</button></article>")).join('');
+      '</p>'+treeMapButton(id)+'</article>').join('');
   drawPanel('my-trees',say("<div class=\"row\"><h2>Mes arbres</h2><strong>","<div class=\"row\"><h2>Mis árboles</h2><strong>")+ownedCount(now)+' / '+treeLimit()+say(" arbres</strong></div>"," árboles</strong></div>")+
     (entries || say("<p class=\"hint\">Revendique un arbre libre sur la carte pour devenir son gardien.</p>","<p class=\"hint\">Reclama un árbol libre desde el mapa para hacerte su guardián.</p>"))+
     say("<p class=\"hint\">Chaque nouvel arbre est protégé pendant 1 heure. Tu as 15 minutes pour le défendre si un rival te défie.</p>","<p class=\"hint\">Cada árbol nuevo queda protegido durante 1 hora. Si te retan, tienes 15 minutos para defenderlo.</p>")+
@@ -1739,7 +1974,7 @@ function currentTrees(now) {
   });
 }
 function nextIncoming(now) {
-  return Object.entries(state.challenges).filter(([,challenge])=>challenge.direction === 'in' && challenge.ends > now)
+  return Object.entries(state.challenges).filter(([id,challenge])=>parkOfTree(id)===parkId && challenge.direction === 'in' && challenge.ends > now)
     .sort((a,b)=>a[1].ends-b[1].ends)[0];
 }
 function recommendation(now,candidates,heat) {
@@ -1858,16 +2093,19 @@ function renderProfile(now) {
       '</span><strong>'+say(fr,es)+'</strong><small>'+say(frGoal,esGoal)+'</small><span class="badge-status">'+
       (earned ? say('Obtenu','Conseguida') : say('Verrouillé','Bloqueada'))+'</span></li>';
   }).join('');
-  const labels={zone:say('Zone','Zona'),park:say('Parc','Parque'),city:say('Ville','Ciudad')};
-  const scopes=Object.entries(labels).map(([key,label])=>'<button class="secondary" type="button" data-action="scope-'+key+'" aria-pressed="'+(rankScope===key)+'">'+label+'</button>').join('');
   const locationLabel=rankScope==='city'?park.city:rankScope==='park'?park.name:zoneName(zoneHere());
-  const header='<div class="entry profile-hero"><div class="row"><div class="player-head"><div><h2>'+html(state.profile?.nickname || say('Profil','Perfil'))+
-    '</h2><p>'+levelTitle(level)+'</p></div></div><button class="secondary" type="button" data-action="language">'+say('Español','Français')+
-    '</button></div><div class="row profile-level"><strong>'+say('Niveau ','Nivel ')+level+'</strong><span>'+
+  const rank=currentRank();
+  const power=rankScores('park').players.get(onlineWorld.uid) || 0;
+  const avatar=animalAvatar(onlineWorld.uid || state.profile?.nickname || 'forestrix');
+  const header='<div class="entry profile-hero"><div class="row"><div class="player-head"><span class="animal-avatar" aria-hidden="true">'+avatar+'</span><div><h2>'+html(state.profile?.nickname || say('Profil','Perfil'))+
+    '</h2><p class="profile-rank">'+(rank ? '#'+number.format(rank)+' · ' : say('Non classé','Sin clasificación')+' · ')+levelTitle(level)+'</p></div></div><button class="secondary" type="button" data-action="language">'+say('Español','Français')+
+    '</button></div><div class="profile-power"><div class="tile"><strong>'+number.format(spendableSavia())+'</strong><small>Savia</small></div>'+
+    '<div class="tile"><strong>'+number.format(power)+'</strong><small>'+say('Puissance','Poder')+' · '+say('pts du parc','pts del parque')+'</small></div></div>'+
+    '<div class="row profile-level"><strong>'+say('Niveau ','Nivel ')+level+'</strong><span>'+
     (level===20 ? number.format(state.progression.xp)+' XP · '+say('Niveau maximal','Nivel máximo') :
       number.format(progress)+' / '+number.format(target)+' XP')+'</span></div>'+
     '<progress max="'+target+'" value="'+(level===20 ? target : progress)+'" aria-label="XP"></progress>'+
-    '<p class="profile-streak">🔥 '+streak+' · '+say('Série quotidienne','Racha diaria')+'</p>'+seasonHeader(now)+'<p>'+html(locationLabel)+'</p><div class="actions">'+scopes+'</div><div class="actions">'+utilityButton('exp-invite',say('Inviter','Invitar'))+utilityButton('exp-sound',soundEnabled?say('Couper les sons','Silenciar sonidos'):say('Activer les sons','Activar sonidos'))+'</div></div>';
+    '<p class="profile-streak">🔥 '+streak+' · '+say('Série quotidienne','Racha diaria')+'</p>'+seasonHeader(now)+'<p>'+html(locationLabel)+'</p><div class="actions">'+utilityButton('exp-invite',say('Inviter','Invitar'))+utilityButton('exp-sound',soundEnabled?say('Couper les sons','Silenciar sonidos'):say('Activer les sons','Activar sonidos'))+'</div></div>';
   const numbers=statTiles([[say('arbres gardés','árboles custodiados'),ownedCount(now)],
     [say('espèces','especies'),Object.keys(state.species).length],[say('jours joués','días jugados'),allDays]],'profile-numbers');
   const impact='<section class="entry profile-impact"><h3>'+(hasClan?say('Impact du clan','Impacto del clan'):say('Ton impact','Tu impacto'))+
@@ -2013,7 +2251,7 @@ document.addEventListener('click',event => {
   const {action,id} = button.dataset;
   if (action === 'close') { selected = null; render(); }
   else if (action.startsWith('exp-')) void handleExpedition(action,id);
-  else if (action.startsWith('scope-')) {rankScope=action.slice(6);render();}
+  else if (action.startsWith('scope-')) {rankScope=action.slice(6);rankView='players';render();}
   else if (action === 'export') exportData();
   else if (action === 'language') {
     try { localStorage.setItem('forestrix.lang',say('es','fr')); location.reload(); } catch {}
@@ -2031,6 +2269,7 @@ document.addEventListener('click',event => {
   else if (action === 'opinion') { $('opinion-form').reset(); $('opinion-error').hidden = true; $('opinion-dialog').showModal(); }
   else if (action === 'show') {
     if (id && parkOfTree(id)!==parkId) {
+      if (!playableParks.includes(parkOfTree(id))) return;
       save();
       location.assign(parkUrl(parkOfTree(id),id));
       return;
@@ -2134,6 +2373,7 @@ function treeDossier(tree,now) {
   const record=state.trees[tree.id];
   const owner=status(tree.id,now)==='libre' ? null : record?.owner;
   const days=vitality(owner ? record : null,now);
+  const lifePercent=Math.round(days/7*100);
   const risk=days<=2 || tree.tier==='remarcable' ? say('Élevé','Alto') : days<=4 ? say('Moyen','Medio') : say('Faible','Bajo');
   const height=tree.height == null ? '—' : number.format(tree.height)+' m';
   const [carbon,shade]=treeEstimates[tree.tier];
@@ -2148,8 +2388,9 @@ function treeDossier(tree,now) {
     '<div class="dossier-content" id="dossier-scroll"><div class="dossier-hero">'+
     (photo ? '<img alt="'+say('Photo de ton arbre','Foto de tu árbol')+'" src="'+html(photo)+'">' :
       '<svg viewBox="0 0 50 50" aria-hidden="true"><use href="#game-tree"></use></svg>')+'</div>'+
-    '<h2 id="dossier-title">'+html(treeTitle(tree))+'</h2><p class="dossier-species">'+html(speciesLabel(tree))+
-    (tree.species ? ' <i>· '+html(tree.species)+'</i>' : '')+'</p>'+
+    '<div class="dossier-identity"><div><h2 id="dossier-title">'+html(treeTitle(tree))+'</h2><p class="dossier-species">'+html(speciesLabel(tree))+
+    (tree.species ? ' <i>· '+html(tree.species)+'</i>' : '')+'</p></div>'+
+    '<div class="dossier-value"><span>'+say('Valeur','Valor')+'</span><strong>'+number.format(TIERS[tree.tier].price)+'</strong><span>Savia</span></div></div>'+
     (tree.kind==='grove'?'<p>'+say('Lisière boisée près d’un chemin public','Borde arbolado junto a un camino público')+'</p>':'<section><h3>'+say('Portrait botanique','Retrato botánico')+'</h3><dl class="dossier-facts">'+
     metadata(say('Hauteur','Altura'),height)+metadata(say('Âge','Edad'),tree.age ? tree.age+' '+say('ans','años') : '—')+
     metadata(say('CO₂/an · estimation','CO₂/año · estimación'),carbon+' kg')+
@@ -2157,8 +2398,8 @@ function treeDossier(tree,now) {
     '<section><h3>'+say('Gardien et vitalité','Guardián y vitalidad')+'</h3>'+
     '<p>'+(owner ? html(guardianLabel(record)+(record.acquiredAt ?
       ' · '+say('depuis le ','desde el ')+localDate.format(record.acquiredAt) : '')) : say('Aucun gardien','Sin guardián'))+'</p>'+
-    (owner ? '<p>'+say('Vitalité','Vitalidad')+' '+days+'/7 · '+say('Risque de défi','Riesgo de reto')+' '+risk+
-      '</p><progress max="7" value="'+days+'" aria-label="'+say('Vitalité','Vitalidad')+'"></progress>' : '')+
+    (owner ? '<div class="dossier-life"><div class="row"><span>'+say('Vitalité','Vitalidad')+' · '+days+'/7</span><strong>'+lifePercent+' %</strong></div>'+
+      '<progress max="100" value="'+lifePercent+'" aria-label="'+say('Vitalité','Vitalidad')+'"></progress><p>'+say('Risque de défi','Riesgo de reto')+' · '+risk+'</p></div>' : '')+
     (challenge ? '<p><strong>'+html(challengeText(challenge,now))+'</strong></p>' : '')+'</section>'+
     '<section><h3>'+say('Historique','Historial')+'</h3>'+
     (history.length ? '<ol class="tree-timeline">'+history.map(item=>'<li><span>'+treeHistory[item.tipo]+'</span><time datetime="'+html(item.fecha)+'">'+
@@ -2513,20 +2754,32 @@ function clanWeeklyRank(now) {
 function weeklyPoints(id,now) {
   return onlineWorld.weekPoints?.get(id) || 0;
 }
+const animalAvatars=['🦌','🐺','🦊','🦅','🦉','🐗'];
+function animalAvatar(id) {
+  return animalAvatars[hash(id)%animalAvatars.length];
+}
 function rankRows(items,own,limit) {
   const ranked=items.sort((a,b)=>b.points-a.points || a.name.localeCompare(b.name,locale) || a.id.localeCompare(b.id));
   const mine=ranked.findIndex(row=>row.id===own);
-  const row=(value,index)=>'<li'+(value.id===own?' class="rank-mine"':'')+'><span><b>'+(index+1)+'.</b> '+html(value.name)+'</span><b>'+number.format(value.points)+' pts</b></li>';
-  return '<ol class="rank-list">'+ranked.slice(0,limit).map(row).join('')+(mine>=limit?row(ranked[mine],mine):'')+'</ol>';
+  const podium=ranked.slice(0,3).map((player,index)=>'<li class="rank-podium-item rank-podium-'+(index+1)+(player.id===own?' rank-mine':'')+'"'+
+    (player.id===own?' aria-current="true"':'')+'><span class="animal-avatar" aria-hidden="true">'+animalAvatar(player.id)+'</span>'+
+    '<strong>'+html(player.name)+'</strong><span class="rank-points">'+number.format(player.points)+' pts</span>'+
+    '<span class="rank-podium-step"><span class="sr-only">'+say('Position','Puesto')+' </span>'+(index+1)+'</span></li>').join('');
+  const row=(value,index)=>'<li'+(value.id===own?' class="rank-mine" aria-current="true"':'')+'><span><b>#'+(index+1)+'</b> '+html(value.name)+'</span><b class="rank-points">'+number.format(value.points)+' pts</b></li>';
+  return '<ol class="rank-podium" aria-label="'+say('Podium','Podio')+'">'+podium+'</ol>'+
+    (ranked.length>3 ? '<ol class="rank-list" start="4">'+ranked.slice(3,limit).map((value,index)=>row(value,index+3)).join('')+(mine>=limit?row(ranked[mine],mine):'')+'</ol>' : '');
 }
 function renderRanking(now=Date.now()) {
   const players=rankView==='players';
   const scores=rankScores(rankScope);
   const items=players ? rankedPlayers(rankScope) :
     [...onlineWorld.clans].filter(([id])=>scores.clans.has(id)).map(([id,c])=>({id,name:c.emblem+' '+c.name,points:scores.clans.get(id)}));
-  return '<section class="entry"><h3>'+say('Classement','Clasificación')+'</h3>'+seasonHeader(now)+'<div class="actions">'+
-    '<button type="button" class="secondary" data-action="rank-players" aria-pressed="'+players+'">'+say('Joueurs','Jugadores')+'</button>'+
-    '<button type="button" class="secondary" data-action="rank-clans" aria-pressed="'+!players+'">Clans</button></div>'+
+  const labels={zone:say('Zone','Zona'),park:say('Parc','Parque'),city:say('Ville','Ciudad')};
+  const scopes=Object.entries(labels).map(([key,label])=>'<button class="secondary" type="button" data-action="scope-'+key+'" aria-pressed="'+(players && rankScope===key)+'">'+label+'</button>').join('');
+  const locationLabel=rankScope==='city'?park.city:rankScope==='park'?park.name:zoneName(zoneHere());
+  return '<section class="entry ranking"><h3>'+say('Classement','Clasificación')+'</h3>'+seasonHeader(now)+
+    '<div class="actions rank-scopes">'+scopes+'<button type="button" class="secondary" data-action="rank-clans" aria-pressed="'+!players+'">'+say('Clans','Clanes')+'</button></div>'+
+    '<p class="hint">'+html(locationLabel)+'</p>'+
     (items.length ? rankRows(items,players?onlineWorld.uid:myClan(),players?20:10) : '<p class="hint">'+say('Aucun classement disponible.','Clasificación no disponible.')+'</p>')+'</section>';
 }
 function clanButton(action,label,id='') {
