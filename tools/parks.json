@@ -1,0 +1,5 @@
+{
+  "oxford": {"name":"University Parks","city":"Oxford","osm":"R12532311","epsg":27700,"source":"osm","center":[51.762,-1.254],"idPrefix":"","zones":false,"weeklyTree":"13100408200"},
+  "paris": {"name":"Bois de Boulogne","city":"Paris","osm":"R16731685","epsg":2154,"source":"paris","center":[48.864,2.249],"zones":true},
+  "clermont": {"name":"Jardin Lecoq","city":"Clermont-Ferrand","osm":"W4245800","epsg":2154,"source":"osm","center":[45.7726,3.0879],"zones":false,"municipalInventory":null}
+}
