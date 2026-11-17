@@ -13,9 +13,9 @@ from urllib.request import Request, urlopen
 
 import folium
 from pyproj import Transformer
-from shapely import STRtree, make_valid
-from shapely.geometry import LineString, Point, Polygon, box, mapping, shape
-from shapely.ops import polygonize, transform, unary_union
+from shapely import STRtree, make_valid, voronoi_polygons
+from shapely.geometry import LineString, MultiPoint, Point, Polygon, box, mapping, shape
+from shapely.ops import nearest_points, polygonize, transform, unary_union
 
 OVERPASS = ("https://overpass.private.coffee/api/interpreter", "https://overpass-api.de/api/interpreter")
 PARIS_API = "https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/"
@@ -50,7 +50,7 @@ def fetch_outline(park):
     return item
 
 
-def fetch_osm(bounds):
+def fetch_osm(bounds, park):
     west, south, east, north = bounds
     extent = f"({south:.6f},{west:.6f},{north:.6f},{east:.6f})"
     filters = (
@@ -59,9 +59,19 @@ def fetch_osm(bounds):
         'way["highway"~"^(' + "|".join(sorted(ROAD_TYPES)) + ')$"]',
         'way["name"]["leisure"~"^(park|garden|horse_riding|sports_centre|track|nature_reserve)$"]',
         'nwr["name"]["natural"~"^(water|wood)$"]',
+        'way["natural"="wood"]',
+        'way["landuse"="forest"]',
+        'way["leisure"~"^(sports_centre|stadium|horse_riding|golf_course|pitch|track)$"]',
+        'way["access"~"^(private|no|customers|permit)$"]',
+        'way["fee"]["fee"!="no"]',
         'way["name"]["landuse"="recreation_ground"]',
     )
-    query = "[out:json][timeout:25];(" + ";".join(f + extent for f in filters) + ";);out geom;"
+    fixed = defaultdict(set)
+    for _, _, kind, identifier in park.get("landmarks",[]):
+        fixed[kind].add(identifier)
+    fixed["way"].update(park.get("excludedWays",[]))
+    explicit = [kind+"(id:"+",".join(map(str,sorted(ids)))+")" for kind,ids in fixed.items() if ids]
+    query = "[out:json][timeout:25];(" + ";".join([*(f + extent for f in filters),*explicit]) + ";);out geom;"
     for server in OVERPASS:
         try:
             data = download(server, data=query)
@@ -91,9 +101,101 @@ def geometry_of(way, nodes):
     return [nodes[node] for node in way.get("nodes", []) if node in nodes]
 
 
-def osm_geometry(elements, boundary, project):
+LIMITED_ACCESS = {"private", "no", "customers", "permit", "members", "staff", "military"}
+SPORTS_GROUNDS = {"sports_centre", "stadium", "horse_riding", "golf_course", "pitch", "track"}
+
+
+def osm_shapes(elements, project):
+    nodes = {item["id"]: (item["lon"], item["lat"]) for item in elements if item["type"] == "node"}
+    ways = {item["id"]: item for item in elements if item["type"] == "way"}
+    for item in {(row["type"], row["id"]):row for row in elements}.values():
+        kind, tags = item["type"], item.get("tags", {})
+        if kind == "way":
+            points = geometry_of(item, nodes)
+            if len(points)>=4 and points[0]==points[-1]:
+                yield item, make_valid(transform(project, Polygon(points))).buffer(0)
+        elif kind == "relation" and tags.get("type") == "multipolygon":
+            parts = defaultdict(list)
+            for member in item.get("members", []):
+                if member["type"] != "way":
+                    continue
+                points = geometry_of(member if member.get("geometry") else ways.get(member["ref"], {}), nodes)
+                if len(points)>=2:
+                    parts[member.get("role") or "outer"].append(LineString(points))
+            exterior = unary_union(list(polygonize(parts["outer"])))
+            interior = unary_union(list(polygonize(parts["inner"])))
+            if not exterior.is_empty:
+                yield item, transform(project, exterior.difference(interior))
+
+
+def access_layers(elements, boundary, project, park):
+    restricted, water, woods = [], [], []
+    anchors = {}
+    ids = set(park["excludedWays"])
+    landmarks = {(kind, number) for _, _, kind, number in park["landmarks"]}
+    for item, area in osm_shapes(elements, project):
+        key = item["type"], item["id"]
+        tags = item.get("tags", {})
+        if area.is_empty or not boundary.intersects(area):
+            continue
+        if key in landmarks:
+            anchors[key] = area.centroid
+        if (item["type"]=="way" and item["id"] in ids) or (
+            tags.get("access") in LIMITED_ACCESS or tags.get("foot") in LIMITED_ACCESS
+            or tags.get("leisure") in SPORTS_GROUNDS or tags.get("landuse") in {"military","greenhouse_horticulture"}
+            or tags.get("fee") not in {None,"no"}
+        ):
+            restricted.append(area)
+        if tags.get("natural")=="water" or "water" in tags:
+            water.append(area)
+        if tags.get("natural")=="wood" or tags.get("landuse")=="forest":
+            woods.append(area)
+    for node in (item for item in elements if item["type"]=="node" and ("node",item["id"]) in landmarks):
+        anchors["node",node["id"]]=Point(project(node["lon"],node["lat"]))
+    return (unary_union(restricted).buffer(4).intersection(boundary),
+            unary_union(water).intersection(boundary), unary_union(woods).intersection(boundary), anchors)
+
+
+def landmark_zones(park, boundary, anchors):
+    landmarks = [(key,label,anchors[kind,identifier]) for key,label,kind,identifier in park["landmarks"] if (kind,identifier) in anchors]
+    if len(landmarks)!=len(park["landmarks"]):
+        missing=[label for _,label,kind,identifier in park["landmarks"] if (kind,identifier) not in anchors]
+        raise ValueError("Missing mapped landmarks: "+", ".join(missing))
+    cells = voronoi_polygons(MultiPoint([point for _,_,point in landmarks]), extend_to=boundary.envelope).geoms
+    return {key:(label,next(cell for cell in cells if cell.covers(point)).intersection(boundary))
+            for key,label,point in landmarks}
+
+
+def public_groves(path_network, woods, excluded, roads, inverse, existing, project):
+    reachable_wood=woods.difference(excluded.union(roads.buffer(10.5)))
+    corridors=path_network.intersection(reachable_wood.buffer(12))
+    if corridors.is_empty:
+        return []
+    position_index=STRtree([Point(project(tree["lon"],tree["lat"])) for tree in existing])
+    masked=excluded.union(roads.buffer(10.5))
+    west,south,east,north=corridors.bounds
+    candidates=[]
+    for x in range(math.floor(west/63),math.ceil(east/63)):
+        for y in range(math.floor(south/63),math.ceil(north/63)):
+            square=box(x*63,y*63,(x+1)*63,(y+1)*63)
+            line=corridors.intersection(square)
+            if line.length<8:
+                continue
+            on_path=nearest_points(square.centroid,line)[1]
+            point=nearest_points(on_path,reachable_wood)[1]
+            if point.distance(on_path)>12.1 or masked.covers(point) or point.distance(position_index.geometries[position_index.nearest(point)])<12:
+                continue
+            lon,lat=inverse(point.x,point.y)
+            identifier=str(int.from_bytes(hashlib.sha256(f"{x},{y}".encode()).digest()[:5],"big"))
+            candidates.append({"id":"paris-grove-"+identifier,"lat":lat,"lon":lon,"kind":"grove",
+                               "remarkable":False,"tags":{}})
+    return candidates
+
+
+def osm_geometry(elements, boundary, project, restricted=None):
     nodes = {row["id"]: (row["lon"], row["lat"]) for row in elements if row["type"] == "node"}
     paths, roads, named = [], [], []
+    park_margin=boundary.buffer(30)
     for way in {row["id"]: row for row in elements if row["type"] == "way"}.values():
         tags = way.get("tags", {})
         points = geometry_of(way, nodes)
@@ -101,11 +203,13 @@ def osm_geometry(elements, boundary, project):
             continue
         hwy = tags.get("highway")
         if hwy in PATH_TYPES | ROAD_TYPES:
-            line = transform(project, LineString(points)).intersection(boundary.buffer(30))
+            line = transform(project, LineString(points)).intersection(park_margin)
             if line.is_empty:
                 continue
-            if hwy in PATH_TYPES and tags.get("foot") not in {"no", "private"} and tags.get("access") not in {"no", "private"}:
-                paths.append(line)
+            if hwy in PATH_TYPES and tags.get("foot") not in LIMITED_ACCESS and tags.get("access") not in LIMITED_ACCESS and tags.get("fee") in {None,"no"}:
+                public = line if restricted is None else line.difference(restricted)
+                if public.length:
+                    paths.append(public)
             if hwy in ROAD_TYPES and tags.get("motor_vehicle") not in {"no", "private"} and tags.get("access") not in {"no", "private"} and tags.get("service") not in {"driveway", "parking_aisle", "emergency_access"}:
                 roads.append(line)
         if (tags.get("name") and len(points) >= 4 and points[0] == points[-1] and
@@ -201,7 +305,7 @@ def make_zones(park, boundary, named):
     return zones
 
 
-def select_trees(trees, zones, paths, roads, project, reserved):
+def select_trees(trees, zones, paths, roads, project, reserved, restricted=None, max_per_zone=60, preferred=()):
     path_index, road_index = STRtree(paths), STRtree(roads)
     counts = Counter(t["tags"].get("species","").strip().casefold() for t in trees)
     positions = {}
@@ -218,14 +322,16 @@ def select_trees(trees, zones, paths, roads, project, reserved):
         species = tree["tags"].get("species","").strip().casefold()
         rarity = (3 if counts[species]<5 else 1 if counts[species]<20 else 0) if species else 0
         score = min(3,int(height//6)) + rarity + (10 if tree["remarkable"] else 0)
-        reason = "road" if near_road < 10 else "path" if near_path > 20 else ""
+        reason = ("restricted" if restricted is not None and restricted.covers(point) else
+                  "road" if near_road < 10 else "path" if near_path > 20 else "")
         tree.update(zone=zone, pathM=round(near_path,1), roadM=round(near_road,1), score=score, game=False, reason=reason)
     accepted = []
     used = Counter()
-    ordered = sorted(trees, key=lambda entry: (-entry["score"], entry["id"]))
+    preferred=set(preferred)
+    ordered = sorted(trees, key=lambda entry: (entry.get("kind")=="grove",entry["id"] not in preferred,-entry["score"],entry["id"]))
     for tree in sorted(ordered,key=lambda entry:not(entry["remarkable"] or entry["id"]==reserved)):
         special = tree["remarkable"] or tree["id"]==reserved
-        if not special and (tree["reason"] or used[tree["zone"]] >= 60):
+        if tree["reason"]=="restricted" or (restricted is not None and tree["reason"]) or (not special and (tree["reason"] or used[tree["zone"]] >= max_per_zone)):
             continue
         point = positions[tree["id"]]
         if not special and any(point.distance(other)<45 for other in accepted):
@@ -247,7 +353,7 @@ def feature(geom, **properties):
     return {"type":"Feature","geometry":data,"properties":properties}
 
 
-def preview(path, park, trees, zones, paths, roads, inverse):
+def preview(path, park, trees, zones, paths, roads, inverse, restricted=None):
     chart = folium.Map(location=park["center"],zoom_start=14,tiles="OpenStreetMap")
     for title, lines, color in [("Chemins piétons", paths, "#707878"), ("Routes", roads, "#202020")]:
         folium.GeoJson({"type":"FeatureCollection","features":[feature(transform(inverse,unary_union(lines).simplify(1.75)))]},
@@ -255,11 +361,17 @@ def preview(path, park, trees, zones, paths, roads, inverse):
     folium.GeoJson({"type":"FeatureCollection","features":[feature(transform(inverse,area.simplify(4,preserve_topology=True)),zone=name) for name,area in zones.values()]},
                    name="Zones",style_function=lambda _:{"color":"#485cb2","weight":2,"fillOpacity":.03},
                    tooltip=folium.GeoJsonTooltip(fields=["zone"])).add_to(chart)
+    if restricted is not None:
+        folium.GeoJson(feature(transform(inverse,restricted.simplify(1.5))),name="Emprises à accès restreint",
+                       style_function=lambda _:{"color":"#9c3348","weight":1.5,"fillOpacity":.27}).add_to(chart)
+        chart.get_root().html.add_child(folium.Element('<div style="position:fixed;bottom:24px;left:12px;z-index:900;background:white;padding:4px">Arbres : <a href="https://opendata.paris.fr/explore/dataset/les-arbres/">Ville de Paris</a> · ODbL</div>'))
     for title, color, predicate in [
-        ("Arbres de jeu", "#237542", lambda t:t["game"] and not t["remarkable"]),
-        ("Herbier", "#777e78", lambda t:not t["game"] and t["reason"]!="road"),
+        ("Arbres de jeu", "#237542", lambda t:t["game"] and not t["remarkable"] and t.get("kind")!="grove"),
+        ("Bosquets de jeu", "#146f86", lambda t:t["game"] and t.get("kind")=="grove"),
+        ("Herbier", "#777e78", lambda t:not t["game"] and t["reason"] not in {"road","restricted"}),
+        ("Écartés : accès restreint", "#9c3348", lambda t:not t["game"] and t["reason"]=="restricted"),
         ("Écartés : route", "#c13932", lambda t:not t["game"] and t["reason"]=="road"),
-        ("Arbres remarquables", "#c99300", lambda t:t["remarkable"]),
+        ("Arbres remarquables de jeu", "#c99300", lambda t:t["remarkable"] and t["game"]),
     ]:
         entries = [feature(Point(t["lon"],t["lat"]),id=t["id"],espece=t["tags"].get("species",""),chemin=t["pathM"],route=t["roadM"]) for t in trees if predicate(t)]
         if entries:
@@ -284,23 +396,35 @@ def main():
     project = Transformer.from_crs(4326,park["epsg"],always_xy=True).transform
     inverse = Transformer.from_crs(park["epsg"],4326,always_xy=True).transform
     west,south,east,north = outline.bounds
-    osm = load_or_fetch(args.cache,prefix+"osm.json",lambda:fetch_osm((west-.001,south-.001,east+.001,north+.001)))["elements"]
+    osm = load_or_fetch(args.cache,prefix+"osm.json",lambda:fetch_osm((west-.001,south-.001,east+.001,north+.001),park))["elements"]
     boundary = transform(project,outline)
-    paths, roads, named = osm_geometry(osm,boundary,project)
-    zones = make_zones(park,boundary,named)
+    restricted = None
+    if park.get("excludedWays"):
+        restricted, water, woods, anchors = access_layers(osm, boundary, project, park)
+    paths, roads, named = osm_geometry(osm,boundary,project,restricted)
+    zones = landmark_zones(park,boundary,anchors) if park.get("landmarks") else make_zones(park,boundary,named)
     if park["source"]=="paris":
         municipal = load_or_fetch(args.cache,prefix+"municipal.json",lambda:download(
             PARIS_API+"les-arbres/exports/json",where="arrondissement = 'BOIS DE BOULOGNE' and typeemplacement = 'Arbre'"))
         remarkable = load_or_fetch(args.cache,prefix+"remarkables.json",lambda:download(
             PARIS_API+"arbresremarquablesparis/exports/json",where="arbres_arrondissement = 'BOIS DE BOULOGNE'"))
         trees = list(paris_rows(municipal,remarkable,outline))
+        municipal_index=STRtree([Point(project(tree["lon"],tree["lat"])) for tree in trees])
+        for tree in osm_rows(osm,outline,"paris-osm-"):
+            point=Point(project(tree["lon"],tree["lat"]))
+            if point.distance(municipal_index.geometries[municipal_index.nearest(point)])>=8:
+                trees.append(tree)
+        road_network=unary_union(roads)
+        trees.extend(public_groves(unary_union(paths), woods, restricted.union(water), road_network, inverse, trees,project))
     else:
         trees = list(osm_rows(osm,outline,park.get("idPrefix",prefix)))
-    trees = select_trees(trees,zones,paths,roads,project,park.get("weeklyTree"))
+    trees = select_trees(trees,zones,paths,roads,project,park.get("weeklyTree"),restricted.union(water) if restricted is not None else None,park.get("maxPerZone",60),park.get("preferredGameIds",()))
+    # Keep the existing municipal herbarium. Publish only playable additions.
+    trees = [tree for tree in trees if tree["game"] or (tree.get("kind")!="grove" and not tree["id"].startswith("paris-osm-"))]
     zone_data=[]
     game_zones=Counter(t["zone"] for t in trees if t["game"])
     # Give each retained zone room for both its weekly tree and ordinary play.
-    if len(game_zones)>3:
+    if len(game_zones)>3 and not park.get("landmarks"):
         anchors={key for key,count in game_zones.items() if count>=3}
         for key in list(zones):
             if key in anchors:
@@ -324,13 +448,15 @@ def main():
     for key,(name,area) in zones.items():
         if key not in populated:
             continue
-        weekly=next((t["id"] for t in sorted(trees,key=lambda t:(-t["score"],t["id"])) if t["zone"]==key and t["game"]),None)
+        weekly=next((t["id"] for t in sorted(trees,key=lambda t:(t.get("kind")=="grove",-t["score"],t["id"])) if t["zone"]==key and t["game"]),None)
         zone_data.append(dict(id=key,name=name,geometry=mapping(transform(inverse,area.simplify(3))),weeklyTree=weekly if per_zone else None))
     unique_species={t["tags"]["species"].strip().casefold() for t in trees if t["tags"].get("species")}
     result = {"park":args.park,"source":park["source"],"center":park["center"],"outline":mapping(outline),"trees":trees,"zones":zone_data,"byZone":per_zone,"weeklyTree":weekly_tree if not per_zone else None,
               "summary":{"total":len(trees),"game":sum(t["game"] for t in trees),"zones":len(game_zones),"species":len(unique_species),"remarkable":sum(t["remarkable"] for t in trees)}}
+    if park.get("excludedWays"):
+        result["revision"]="public-paths-v1"
     (args.out/f"{args.park}.json").write_text(json.dumps(result,ensure_ascii=False,separators=(",", ":"))+"\n")
-    preview(args.out/f"{args.park}-preview.html",park,trees,{key:value for key,value in zones.items() if key in populated},paths,roads,inverse)
+    preview(args.out/f"{args.park}-preview.html",park,trees,{key:value for key,value in zones.items() if key in populated},paths,roads,inverse,restricted)
     print(json.dumps({"summary":result["summary"],"game_by_zone":dict(sorted(game_zones.items()))},ensure_ascii=False,indent=2))
 
 

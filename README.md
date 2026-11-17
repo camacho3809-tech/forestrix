@@ -21,7 +21,11 @@ Le script produit `data/paris.json` et `data/paris-preview.html` (ou les équiva
 | University Parks | OpenStreetMap, nœuds `natural=tree` | OpenStreetMap, relation 12532311 | British National Grid, EPSG:27700 |
 | Jardin Lecoq | OpenStreetMap, nœuds `natural=tree`. Le champ `municipalInventory` est prévu pour renseigner la future source municipale. | OpenStreetMap, chemin fermé 4245800 | Lambert-93, EPSG:2154 |
 
-Les requêtes de chemins piétons et de routes sont séparées par type dans la requête Overpass. Si Overpass échoue, le script récupère les mêmes éléments via l’API cartographique OSM. Les distances sont calculées sur les géométries projetées. Hors exception pour les remarquables et l’arbre historique de la semaine d’Oxford, les arbres de jeu se trouvent à 20 m ou moins d’un chemin et à 10 m ou plus d’une route. Les arbres retenus sont espacés de 45 m. Les remarquables sont prioritaires et peuvent déroger à ces critères. Les données OSM et les inventaires de Paris sont sous licence ODbL.
+Les requêtes Overpass distinguent chemins piétons et routes. Si Overpass échoue, le script utilise l’API cartographique d’OSM. Les distances sont mesurées sur les géométries projetées. Les arbres ordinaires retenus se trouvent à 20 m ou moins d’un chemin et à 10 m ou plus d’une route, avec 45 m d’espacement.
+
+À Paris, le générateur exclut des emplacements de jeu les enceintes sportives, les secteurs marqués privés, les zones payantes et les plans d’eau cartographiés. Les remarcables situés dans ces emprises restent à l’herbier. Les emprises nommées à contrôler avant une mise à jour sont dans `excludedWays`. L’aperçu affiche ce masque séparément. Les parcours sont découpés sur le bord public des emprises. Les anciens emplacements conformes sont prioritaires, puis les arbres OSM sont complétés par des bosquets représentés sur la lisière d’une surface boisée cartographiée à proximité d’un chemin public. Un bosquet représente un lieu de jeu et n’atteste pas d’une espèce.
+
+Les zones de Paris portent le nom des repères définis dans `landmarks`. Le catalogue est limité à 30 emplacements jouables par zone. Le script `sync_park_rules.py` recopie la sélection et les arbres d’enchères dans les règles Firestore. Les données OSM et les inventaires de Paris sont sous licence ODbL.
 
 ### Exemple Jardin Lecoq, Clermont-Ferrand
 

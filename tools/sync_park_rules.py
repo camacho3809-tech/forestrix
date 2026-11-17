@@ -35,14 +35,17 @@ def main():
             if key != "oxford":
                 weekly[key+"--park"] = park["weeklyTree"]
     pretty = lambda obj: json.dumps(obj,ensure_ascii=True,separators=(",", ":")).replace('"',"'")
-    groups = [[] for _ in range(16)]
+    groups = [[] for _ in range(64)]
     for key,value in sorted(areas.items()):
         groups[int(key.rsplit("-",1)[-1]) % len(groups)].append(pretty(key)+":"+pretty(value))
+    def bucket_choice(lower, upper):
+        if upper-lower == 1:
+            return "{"+",".join(groups[lower])+"}"
+        middle = (lower+upper)//2
+        return f"bucket < {middle} ? ({bucket_choice(lower,middle)}) : ({bucket_choice(middle,upper)})"
     lines = [
         START,
-        "    function gameBucket(bucket) { return",
-        *[f"      bucket == {index} ? "+ "{"+ ",".join(group)+"} :" for index,group in enumerate(groups)],
-        "      {}; }",
+        "    function gameBucket(bucket) { return "+bucket_choice(0,len(groups))+"; }",
         "    function reservedTree(id) { return id in "+pretty(sorted(reserved))+"; }",
         "    function parkBounds() { return "+pretty(bounds)+"; }",
         "    function weeklyScopes() { return "+pretty(weekly)+"; }",
