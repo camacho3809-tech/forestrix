@@ -1858,6 +1858,9 @@ function renderProfile(now) {
       '</span><strong>'+say(fr,es)+'</strong><small>'+say(frGoal,esGoal)+'</small><span class="badge-status">'+
       (earned ? say('Obtenu','Conseguida') : say('Verrouillé','Bloqueada'))+'</span></li>';
   }).join('');
+  const labels={zone:say('Zone','Zona'),park:say('Parc','Parque'),city:say('Ville','Ciudad')};
+  const scopes=Object.entries(labels).map(([key,label])=>'<button class="secondary" type="button" data-action="scope-'+key+'" aria-pressed="'+(rankScope===key)+'">'+label+'</button>').join('');
+  const locationLabel=rankScope==='city'?park.city:rankScope==='park'?park.name:zoneName(zoneHere());
   const header='<div class="entry profile-hero"><div class="row"><div class="player-head"><div><h2>'+html(state.profile?.nickname || say('Profil','Perfil'))+
     '</h2><p>'+levelTitle(level)+'</p></div></div><button class="secondary" type="button" data-action="language">'+say('Español','Français')+
     '</button></div><div class="row profile-level"><strong>'+say('Niveau ','Nivel ')+level+'</strong><span>'+
@@ -2521,9 +2524,6 @@ function renderRanking(now=Date.now()) {
   const scores=rankScores(rankScope);
   const items=players ? rankedPlayers(rankScope) :
     [...onlineWorld.clans].filter(([id])=>scores.clans.has(id)).map(([id,c])=>({id,name:c.emblem+' '+c.name,points:scores.clans.get(id)}));
-  const labels={zone:say('Zone','Zona'),park:say('Parc','Parque'),city:say('Ville','Ciudad')};
-  const scopes=Object.entries(labels).map(([key,label])=>'<button class="secondary" type="button" data-action="scope-'+key+'" aria-pressed="'+(rankScope===key)+'">'+label+'</button>').join('');
-  const locationLabel=rankScope==='city'?park.city:rankScope==='park'?park.name:zoneName(zoneHere());
   return '<section class="entry"><h3>'+say('Classement','Clasificación')+'</h3>'+seasonHeader(now)+'<div class="actions">'+
     '<button type="button" class="secondary" data-action="rank-players" aria-pressed="'+players+'">'+say('Joueurs','Jugadores')+'</button>'+
     '<button type="button" class="secondary" data-action="rank-clans" aria-pressed="'+!players+'">Clans</button></div>'+
